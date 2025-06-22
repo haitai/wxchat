@@ -25,27 +25,53 @@ class NetworkManager {
         // 连接状态历史
         this.connectionHistory = [];
         this.maxHistoryLength = 10;
-        
-        this.init();
+
+        // 初始化标志
+        this.initialized = false;
+
+        // 延迟初始化，确保其他模块已加载
+        this.delayedInit();
     }
     
+    // 延迟初始化
+    delayedInit() {
+        // 如果DOM还没有加载完成，等待加载
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.init();
+            });
+        } else {
+            // DOM已经加载完成，延迟一点时间确保其他模块加载
+            setTimeout(() => {
+                this.init();
+            }, 100);
+        }
+    }
+
     // 初始化网络管理器
     init() {
+        if (this.initialized) {
+            return; // 避免重复初始化
+        }
+
         console.log('🌐 初始化统一网络状态管理器');
-        
+
         // 设置网络状态监听
         this.setupNetworkListeners();
-        
+
         // 开始网络质量检测
         this.startQualityMonitoring();
-        
+
         // 初始状态检测
         this.checkInitialNetworkState();
-        
+
         // 移动端特殊处理
         if (this.isMobile) {
             this.setupMobileOptimizations();
         }
+
+        this.initialized = true;
+        console.log('✅ 网络管理器初始化完成');
     }
     
     // 检测移动设备
@@ -144,7 +170,7 @@ class NetworkManager {
         }
         
         // 显示通知
-        if (wasOffline) {
+        if (wasOffline && typeof Utils !== 'undefined' && Utils.showNotification) {
             Utils.showNotification('网络已恢复连接', 'success');
         }
     }
@@ -159,7 +185,7 @@ class NetworkManager {
         this.updateConnectionStatus('offline');
         
         // 显示通知
-        if (wasOnline) {
+        if (wasOnline && typeof Utils !== 'undefined' && Utils.showNotification) {
             Utils.showNotification('已切换到离线模式，部分功能可能受限', 'warning');
         }
     }
@@ -189,42 +215,51 @@ class NetworkManager {
         ];
 
         reconnectionSteps.forEach((step, index) => {
-            setTimeout(async () => {
-                switch (step.action) {
-                    case 'initial_check':
-                        console.log('📱 初始网络检查');
-                        await this.checkNetworkQuality();
-                        break;
-
-                    case 'quality_check':
-                        console.log('📱 网络质量检查');
-                        await this.checkNetworkQuality();
-
-                        // 如果网络质量好，通知其他模块可以重连
-                        if (this.connectionQuality === 'good') {
-                            this.notifyListeners('mobileReconnectionReady', {
-                                quality: this.connectionQuality,
-                                timestamp: Date.now()
-                            });
-                        }
-                        break;
-
-                    case 'stability_check':
-                        console.log('📱 网络稳定性检查');
-                        await this.checkNetworkQuality();
-
-                        // 最终稳定性确认
-                        this.notifyListeners('mobileReconnectionComplete', {
-                            quality: this.connectionQuality,
-                            stable: this.connectionQuality !== 'poor',
-                            timestamp: Date.now()
-                        });
-                        break;
-                }
+            setTimeout(() => {
+                this.handleReconnectionStep(step.action);
             }, step.delay);
         });
     }
-    
+
+    // 处理重连步骤
+    async handleReconnectionStep(action) {
+        try {
+            switch (action) {
+                case 'initial_check':
+                    console.log('📱 初始网络检查');
+                    await this.checkNetworkQuality();
+                    break;
+
+                case 'quality_check':
+                    console.log('📱 网络质量检查');
+                    await this.checkNetworkQuality();
+
+                    // 如果网络质量好，通知其他模块可以重连
+                    if (this.connectionQuality === 'good') {
+                        this.notifyListeners('mobileReconnectionReady', {
+                            quality: this.connectionQuality,
+                            timestamp: Date.now()
+                        });
+                    }
+                    break;
+
+                case 'stability_check':
+                    console.log('📱 网络稳定性检查');
+                    await this.checkNetworkQuality();
+
+                    // 最终稳定性确认
+                    this.notifyListeners('mobileReconnectionComplete', {
+                        quality: this.connectionQuality,
+                        stable: this.connectionQuality !== 'poor',
+                        timestamp: Date.now()
+                    });
+                    break;
+            }
+        } catch (error) {
+            console.error('重连步骤处理失败:', error);
+        }
+    }
+
     // 设置移动端优化
     setupMobileOptimizations() {
         console.log('📱 启用移动端网络优化');
@@ -288,11 +323,16 @@ class NetworkManager {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+            const headers = {};
+            if (typeof Auth !== 'undefined' && Auth.addAuthHeader) {
+                Object.assign(headers, Auth.addAuthHeader({}));
+            }
+
             const response = await fetch(testUrl, {
                 method: 'GET',
                 cache: 'no-cache',
                 signal: controller.signal,
-                headers: Auth ? Auth.addAuthHeader({}) : {}
+                headers
             });
 
             clearTimeout(timeoutId);
@@ -344,11 +384,14 @@ class NetworkManager {
     }
     
     // 检查初始网络状态
-    async checkInitialNetworkState() {
+    checkInitialNetworkState() {
         console.log('🔍 检查初始网络状态');
-        
+
         if (this.isOnline) {
-            await this.checkNetworkQuality();
+            // 异步检测网络质量，不阻塞初始化
+            setTimeout(() => {
+                this.checkNetworkQuality();
+            }, 1000);
             this.updateConnectionStatus('connected');
         } else {
             this.connectionQuality = 'offline';
@@ -461,10 +504,15 @@ class NetworkManager {
         // 测试1: 基础连通性
         try {
             const startTime = Date.now();
+            const headers = {};
+            if (typeof Auth !== 'undefined' && Auth.addAuthHeader) {
+                Object.assign(headers, Auth.addAuthHeader({}));
+            }
+
             const response = await fetch('/api/messages?limit=1', {
                 method: 'GET',
                 cache: 'no-cache',
-                headers: Auth ? Auth.addAuthHeader({}) : {}
+                headers
             });
             const endTime = Date.now();
 
@@ -574,7 +622,43 @@ class NetworkManager {
 }
 
 // 创建全局实例
-const NetworkManager = new NetworkManager();
+let NetworkManager;
 
-// 导出到全局
-window.NetworkManager = NetworkManager;
+try {
+    NetworkManager = new NetworkManager();
+
+    // 导出到全局
+    window.NetworkManager = NetworkManager;
+
+    console.log('✅ NetworkManager已成功创建并导出到全局');
+
+} catch (error) {
+    console.error('❌ NetworkManager创建失败:', error);
+
+    // 创建一个简单的降级版本
+    window.NetworkManager = {
+        getStatus: () => ({
+            isOnline: navigator.onLine,
+            quality: 'unknown',
+            isMobile: /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            error: 'NetworkManager初始化失败'
+        }),
+        on: () => {},
+        off: () => {},
+        forceCheck: () => Promise.resolve({ error: 'NetworkManager不可用' }),
+        diagnoseMobileNetwork: () => Promise.resolve({ error: 'NetworkManager不可用' })
+    };
+
+    console.log('⚠️ 使用降级版NetworkManager');
+}
+
+// 全局检查函数
+window.checkNetworkManager = function() {
+    if (typeof window.NetworkManager !== 'undefined') {
+        console.log('✅ NetworkManager可用:', window.NetworkManager.getStatus());
+        return true;
+    } else {
+        console.log('❌ NetworkManager不可用');
+        return false;
+    }
+};
