@@ -7,7 +7,7 @@
     max-width: 75%;
     animation: messageSlideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .message.own {
@@ -46,63 +46,82 @@
 
 .message-content {
     background-color: #f5f5f5;
-    padding: 0.5rem 0.75rem;
-    border-radius: 20px;
-    margin-bottom: 0.5rem;
+    padding: 0.875rem 1.125rem;
+    border-radius: 24px;
+    margin-bottom: 0.625rem;
     word-wrap: break-word;
-    line-height: 1.5;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    line-height: 1.6;
+    font-size: 1rem;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.08),
+        0 4px 12px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
 }
 
 /* 普通文本消息保持紧凑 - 高优先级 */
 .message-content .text-message:not(.markdown-rendered) {
     padding: 0 !important;
     margin: 0 !important;
+    font-weight: 400;
+    letter-spacing: 0.01em;
 }
 
 /* Markdown消息可以有额外的内边距 - 高优先级 */
 .message-content .text-message.markdown-rendered {
-    padding: 0.25rem 24px 0.25rem 0 !important; /* 右边留出按钮空间 */
+    padding: 0.375rem 28px 0.375rem 0 !important; /* 右边留出按钮空间 */
+    font-weight: 400;
+    letter-spacing: 0.01em;
 }
 
 .message-content:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.1),
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(0, 0, 0, 0.03);
 }
 
 .message.own .message-content {
-    background: linear-gradient(135deg, #07c160, #1aad19);
+    background: linear-gradient(135deg, #07c160 0%, #1aad19 50%, #0ea85c 100%);
     color: white;
-    box-shadow: 0 2px 8px rgba(7, 193, 96, 0.3);
+    box-shadow:
+        0 1px 3px rgba(7, 193, 96, 0.2),
+        0 4px 12px rgba(7, 193, 96, 0.15),
+        0 0 0 1px rgba(7, 193, 96, 0.1);
 }
 
 .message.own .message-content:hover {
-    box-shadow: 0 4px 12px rgba(7, 193, 96, 0.4);
+    box-shadow:
+        0 2px 6px rgba(7, 193, 96, 0.25),
+        0 8px 24px rgba(7, 193, 96, 0.2),
+        0 0 0 1px rgba(7, 193, 96, 0.15);
 }
 
 .message-meta {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
+    gap: 0.625rem;
+    font-size: 0.8rem;
     color: #999;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.625rem;
     font-weight: 500;
 }
 
 .message-time {
-    background: rgba(0, 0, 0, 0.05);
-    padding: 0.2rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.06);
+    padding: 0.25rem 0.625rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    backdrop-filter: blur(8px);
+    font-weight: 400;
+    letter-spacing: 0.01em;
 }
 
 .message.own .message-time {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -280,23 +299,23 @@
 
 /* 文件消息 */
 .file-message {
-    min-width: 200px;
+    min-width: 220px;
 }
 
 .file-info {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.5rem;
+    gap: 1rem;
+    margin-bottom: 0.625rem;
 }
 
 .file-icon {
-    font-size: 2rem;
+    font-size: 2.25rem;
     flex-shrink: 0;
     /* 移除渐变背景，让emoji图标显示原始颜色 */
     color: inherit;
     /* 保留阴影效果但调整颜色 */
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
     /* 确保emoji图标正常显示 */
     font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
     line-height: 1;
@@ -309,27 +328,33 @@
 
 .file-name {
     font-weight: 500;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.375rem;
     word-break: break-all;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 .file-size {
-    font-size: 0.8rem;
-    opacity: 0.7;
+    font-size: 0.85rem;
+    opacity: 0.75;
+    font-weight: 400;
 }
 
 .download-btn {
-    background: linear-gradient(135deg, #07c160, #1aad19);
+    background: linear-gradient(135deg, #07c160 0%, #1aad19 50%, #0ea85c 100%);
     color: white;
     border: none;
-    padding: 0.6rem 1rem;
-    border-radius: 12px;
+    padding: 0.75rem 1.125rem;
+    border-radius: 14px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(7, 193, 96, 0.3);
+    box-shadow:
+        0 1px 3px rgba(7, 193, 96, 0.2),
+        0 4px 12px rgba(7, 193, 96, 0.15),
+        0 0 0 1px rgba(7, 193, 96, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -351,7 +376,10 @@
 
 .download-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(7, 193, 96, 0.4);
+    box-shadow:
+        0 2px 6px rgba(7, 193, 96, 0.25),
+        0 8px 24px rgba(7, 193, 96, 0.2),
+        0 0 0 1px rgba(7, 193, 96, 0.15);
 }
 
 .message.own .download-btn {
@@ -368,14 +396,75 @@
 /* 图片预览 */
 .image-preview {
     margin-top: 0.5rem;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f9fa;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    max-width: 300px;
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .image-preview img {
+    width: 100%;
+    height: auto;
     display: block;
-    max-width: 100%;
     max-height: 200px;
-    border-radius: 8px;
     object-fit: cover;
+    transition: transform 0.2s ease;
+    border-radius: 8px;
+}
+
+.image-preview img:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+/* 图片加载状态 */
+.image-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.image-loading .loading-spinner {
+    font-size: 20px;
+    margin-bottom: 8px;
+    animation: spin 1s linear infinite;
+}
+
+/* 图片加载错误状态 */
+.image-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #999;
+    font-size: 14px;
+}
+
+.image-error .retry-btn {
+    margin-top: 8px;
+    background: #07c160;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s ease;
+}
+
+.image-error .retry-btn:hover {
+    background: #06a552;
 }
 
 /* 文件上传组件 - 简化版 */
@@ -448,10 +537,12 @@
     align-items: center;
     background: #ffffff;
     border: 1px solid #d9d9d9;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 0;
     position: relative;
-    min-height: 40px;
+    min-height: 44px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
 }
 
 /* 文件上传按钮 - 微信移动端风格 */
@@ -460,17 +551,18 @@
     border: 1px solid #d9d9d9;
     color: #666666;
     padding: 0;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     font-size: 18px;
     transition: all 0.2s ease;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     touch-action: manipulation;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .file-button:hover:not(:disabled) {
@@ -486,15 +578,16 @@
 .input-field-container textarea {
     flex: 1;
     border: none;
-    padding: 10px 12px;
+    padding: 12px 14px;
     font-size: 16px;
     resize: none;
     min-height: 20px;
     max-height: 100px;
     background: transparent;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.4;
+    line-height: 1.5;
     outline: none;
+    font-weight: 400;
 }
 
 .input-field-container textarea::placeholder {
@@ -504,18 +597,21 @@
 
 .input-field-container:focus-within {
     border-color: #07c160;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.05),
+        0 0 0 2px rgba(7, 193, 96, 0.1);
 }
 
 .send-button {
-    background: #07c160;
+    background: linear-gradient(135deg, #07c160 0%, #1aad19 100%);
     color: white;
     border: none;
     padding: 0;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -527,6 +623,7 @@
     top: 50%;
     transform: translateY(-50%) scale(0);
     opacity: 0;
+    box-shadow: 0 2px 8px rgba(7, 193, 96, 0.3);
 }
 
 /* 发送按钮显示状态 */
@@ -536,11 +633,12 @@
 }
 
 .send-button:hover:not(:disabled) {
-    background: #06ad56;
+    background: linear-gradient(135deg, #06ad56 0%, #159f17 100%);
+    box-shadow: 0 4px 12px rgba(7, 193, 96, 0.4);
 }
 
 .send-button:active:not(:disabled) {
-    background: #059748;
+    background: linear-gradient(135deg, #059748 0%, #138f15 100%);
     transform: translateY(-50%) scale(0.95);
 }
 
@@ -564,4 +662,194 @@
 
 .send-button.loading .send-icon {
     animation: spin 1s linear infinite;
+}
+
+/* PWA相关样式 */
+
+/* PWA安装按钮 */
+.pwa-install-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #07c160 0%, #1aad19 50%, #0ea85c 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 20px rgba(7, 193, 96, 0.3);
+    z-index: 1000;
+    transition: all 0.3s ease;
+    display: none;
+}
+
+.pwa-install-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(7, 193, 96, 0.4);
+}
+
+/* PWA安装横幅 */
+.pwa-install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.pwa-install-banner.show {
+    transform: translateY(0);
+}
+
+.pwa-install-banner.hide {
+    transform: translateY(100%);
+}
+
+.install-content {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 16px;
+}
+
+.install-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.install-text {
+    flex: 1;
+}
+
+.install-text h3 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.install-text p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.install-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.install-yes, .install-no {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.install-yes {
+    background: #07c160;
+    color: white;
+    border: none;
+}
+
+.install-yes:hover {
+    background: #06a552;
+}
+
+.install-no {
+    background: transparent;
+    color: #666;
+    border: 1px solid #d0d0d0;
+}
+
+.install-no:hover {
+    background: #f5f5f5;
+}
+
+/* PWA更新横幅 */
+.pwa-update-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #07c160;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 20px rgba(7, 193, 96, 0.3);
+    z-index: 1002;
+    animation: slideDown 0.3s ease;
+}
+
+.update-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.update-btn, .close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.update-btn:hover, .close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.close-btn {
+    padding: 4px 8px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* 连接状态指示器 */
+.connection-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 999;
+    transition: all 0.3s ease;
+}
+
+.connection-status.online {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.connection-status.offline {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* PWA动画效果 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }

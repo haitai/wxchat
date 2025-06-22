@@ -4,6 +4,9 @@
 @media (max-width: 768px) {
     .app {
         height: 100vh;
+        /* iOS Safari 视口修复 */
+        height: calc(var(--vh, 1vh) * 100);
+        min-height: -webkit-fill-available;
         max-width: 100%;
         border-radius: 0;
         box-shadow: none;
@@ -32,17 +35,22 @@
     }
 
     .message-content {
-        padding: 0.5rem 0.75rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
     }
 
     .message-list {
-        padding: 1rem 0.75rem;
-        gap: 1rem;
+        padding: 1.5rem 1rem;
+        gap: 1.25rem;
     }
 
     .input-container {
         padding: 8px 12px;
         min-height: 56px;
+        /* iOS 平板特殊处理 */
+        padding-bottom: calc(8px + var(--safe-area-inset-bottom));
+        position: -webkit-sticky;
+        position: sticky;
     }
 
     .upload-area {
@@ -54,18 +62,18 @@
     }
 
     .file-button {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
         font-size: 18px;
     }
 
     .input-field-container {
-        min-height: 40px;
+        min-height: 42px;
     }
 
     .input-field-container textarea {
         font-size: 16px;
-        padding: 10px 12px;
+        padding: 11px 13px;
     }
 }
 
@@ -101,19 +109,23 @@
     }
 
     .message-content {
-        padding: 0.45rem 0.65rem;
-        font-size: 0.9rem;
-        border-radius: 16px;
+        padding: 0.75rem 0.875rem;
+        font-size: 0.95rem;
+        border-radius: 20px;
     }
 
     /* 手机设备上的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
         padding: 0;
         margin: 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.2rem 20px 0.2rem 0;
+        padding: 0.3rem 24px 0.3rem 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 
     .message-meta {
@@ -129,6 +141,10 @@
     .input-container {
         padding: 8px 12px;
         min-height: 56px;
+        /* iOS 手机特殊处理 */
+        padding-bottom: calc(8px + var(--safe-area-inset-bottom));
+        position: -webkit-sticky;
+        position: sticky;
     }
 
     .input-wrapper {
@@ -151,13 +167,13 @@
     }
 
     .send-button {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
     }
 
     .send-icon {
-        width: 16px;
-        height: 16px;
+        width: 17px;
+        height: 17px;
     }
     
     .file-upload {
@@ -206,18 +222,22 @@
     }
     
     .message-content {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.85rem;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.9rem;
     }
 
     /* 超小屏幕的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
         padding: 0;
         margin: 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.15rem 18px 0.15rem 0;
+        padding: 0.25rem 20px 0.25rem 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
     
     .file-name {
@@ -234,19 +254,19 @@
     }
 
     .file-button {
-        width: 36px;
-        height: 36px;
+        width: 38px;
+        height: 38px;
         font-size: 16px;
     }
 
     .send-button {
-        width: 28px;
-        height: 28px;
+        width: 30px;
+        height: 30px;
     }
 
     .send-icon {
-        width: 14px;
-        height: 14px;
+        width: 15px;
+        height: 15px;
     }
 }
 
@@ -278,6 +298,85 @@
     }
 }
 
+/* iOS Safari 专用修复 */
+@supports (-webkit-touch-callout: none) {
+    .app {
+        height: -webkit-fill-available;
+        min-height: -webkit-fill-available;
+    }
+
+    .input-container {
+        /* 强制硬件加速，确保在iOS上正确渲染 */
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+        /* 确保在虚拟键盘弹出时保持可见 */
+        position: -webkit-sticky;
+        position: sticky;
+        bottom: 0;
+        /* iOS 特殊的z-index处理 */
+        z-index: 9999;
+    }
+}
+
+/* iOS 设备特定修复 */
+@media screen and (-webkit-min-device-pixel-ratio: 2) and (orientation: portrait) {
+    .app {
+        height: calc(var(--vh, 1vh) * 100);
+        min-height: calc(var(--vh, 1vh) * 100);
+    }
+
+    .input-container {
+        /* 确保输入框在iOS上始终可见 */
+        position: fixed;
+        bottom: var(--safe-area-inset-bottom, 0);
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .message-list {
+        /* 为固定的输入框留出空间 */
+        padding-bottom: calc(72px + var(--safe-area-inset-bottom, 0));
+    }
+}
+
+/* iPhone X 及以上设备的安全区域适配 */
+@media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2),
+       screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
+    .input-container {
+        padding-bottom: calc(8px + 34px); /* 34px 是 iPhone X 系列的底部安全区域 */
+    }
+}
+
+/* iOS 虚拟键盘弹出时的样式调整 */
+body.keyboard-open .app {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+}
+
+body.keyboard-open .input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    z-index: 10000;
+    /* 确保在虚拟键盘上方 */
+    transform: translateY(0);
+}
+
+body.keyboard-open .message-list {
+    /* 为固定输入框预留更多空间 */
+    padding-bottom: 80px;
+}
+
 /* 高分辨率屏幕 */
 @media (min-width: 1200px) {
     .app {
@@ -293,17 +392,22 @@
     }
 
     .message-content {
-        font-size: 1rem;
+        font-size: 1.05rem;
+        padding: 1rem 1.25rem;
     }
 
     /* 高分辨率屏幕的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
         padding: 0;
         margin: 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.25rem 24px 0.25rem 0;
+        padding: 0.375rem 28px 0.375rem 0;
+        font-weight: 400;
+        letter-spacing: 0.01em;
     }
 }
 

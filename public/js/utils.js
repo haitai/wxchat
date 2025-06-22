@@ -221,6 +221,34 @@ const Utils = {
         }
         return CONFIG.DEVICE.NAME_DESKTOP;
     },
+
+    // 检测是否为iOS设备
+    isIOSDevice() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    },
+
+    // 检测是否为iOS Safari
+    isIOSSafari() {
+        const userAgent = navigator.userAgent;
+        const isIOS = this.isIOSDevice();
+        const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS/.test(userAgent);
+        return isIOS && isSafari;
+    },
+
+    // 获取iOS版本
+    getIOSVersion() {
+        if (!this.isIOSDevice()) return null;
+
+        const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+        if (match) {
+            return {
+                major: parseInt(match[1], 10),
+                minor: parseInt(match[2], 10),
+                patch: parseInt(match[3] || '0', 10)
+            };
+        }
+        return null;
+    },
     
     // 创建元素
     createElement(tag, className = '', textContent = '') {

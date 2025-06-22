@@ -11,16 +11,23 @@ console.log('🚀 开始构建微信文件传输助手...');
 // 检查必要的文件是否存在
 const requiredFiles = [
     'public/index.html',
+    'public/login.html',
+    'public/manifest.json',
+    'public/sw.js',
     'public/css/reset.css',
     'public/css/main.css',
     'public/css/components.css',
     'public/css/responsive.css',
+    'public/css/auth.css',
     'public/js/config.js',
     'public/js/utils.js',
+    'public/js/auth.js',
     'public/js/api.js',
     'public/js/ui.js',
     'public/js/fileUpload.js',
     'public/js/messageHandler.js',
+    'public/js/realtime.js',
+    'public/js/pwa.js',
     'public/js/app.js',
     'worker/index.js'
 ];

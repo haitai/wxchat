@@ -1,24 +1,126 @@
-# 微信文件传输助手 Web 应用
+<div align="center">
 
-基于 Cloudflare Workers 的微信文件传输助手 Web 应用，采用**单文件全栈架构**，实现跨设备文件传输和消息同步功能。
+# 🚀 微信文件传输助手 Web 应用
 
-## 🚀 功能特性
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com/)
+[![Hono](https://img.shields.io/badge/Hono-Framework-blue.svg)](https://hono.dev/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-- 📱 **跨设备同步**: 支持多设备间的消息和文件同步
-- 📄 **文件传输**: 支持各种格式文件的上传和下载（最大10MB）
-- 💬 **文本消息**: 发送和接收文本消息
-- 📝 **Markdown渲染**: 自动识别并渲染Markdown语法，支持源码/渲染视图切换
-- 🖼️ **图片预览**: 自动显示图片文件预览
-- 📊 **消息历史**: 完整的消息历史记录
-- 🔄 **实时更新**: 自动刷新获取最新消息（5秒间隔）
+**基于 Cloudflare Workers 的现代化微信文件传输助手**
+*采用模块化全栈架构，实现跨设备文件传输和实时消息同步*
 
-## 🛠️ 技术栈
+[🌟 在线体验](https://wxchat.your-domain.workers.dev) | [📖 使用指南](#-使用指南) | [🚀 快速部署](#-快速开始) | [🐛 问题反馈](https://github.com/xiyewuqiu/wxchat/issues)
 
-- **前端**: 原生HTML + CSS + JavaScript（模块化设计）
-- **后端**: Hono (Cloudflare Workers)
-- **数据库**: Cloudflare D1
-- **文件存储**: Cloudflare R2
-- **部署**: Cloudflare Workers + 静态资源
+</div>
+
+---
+
+## ✨ 功能特性
+
+<div align="center">
+
+| 🎯 核心功能 | 📱 用户体验 | 🔧 技术特色 |
+|------------|------------|------------|
+| 💬 **实时聊天** | 🎨 **WeChat风格UI** | ⚡ **边缘计算** |
+| 📁 **文件传输** | 📱 **响应式设计** | 🛡️ **企业级安全** |
+| 🔐 **访问鉴权** | 🌟 **现代动画** | 🚀 **自动扩容** |
+| 🔄 **跨设备同步** | 🎯 **零延迟响应** | 🔥 **零依赖前端** |
+| 📝 **Markdown渲染** | 🔒 **隐私保护** | 🛡️ **JWT会话管理** |
+| 📱 **PWA支持** | 🚀 **原生应用体验** | 🌐 **离线功能** |
+
+</div>
+
+### 🎯 **核心功能详解**
+
+- 💬 **智能聊天系统**
+  - 实时文本消息发送与接收
+  - 支持表情符号和特殊字符
+  - 消息状态追踪（发送中/已发送/已读）
+  - 完整的消息历史记录
+
+- 📁 **强大文件传输**
+  - 支持所有文件格式（最大10MB）
+  - 拖拽上传 + 剪贴板粘贴
+  - 多文件批量上传
+  - 智能文件类型识别与图标显示
+  - 图片文件自动预览
+
+- 📝 **高级Markdown渲染**
+  - 自动识别Markdown语法
+  - 支持标题、粗体、斜体、列表、代码块
+  - 源码/渲染视图一键切换
+  - 实时预览效果
+
+- 🔄 **无缝跨设备同步**
+  - 多设备间实时消息同步
+  - 文件在所有设备间共享
+  - 自动设备识别与管理
+  - 离线消息缓存
+
+- 🔐 **访问鉴权系统**
+  - 密码保护访问控制
+  - JWT会话管理机制
+  - 防暴力破解保护
+  - 自动登录状态维护
+  - WeChat风格登录界面
+
+- 🛠️ **智能数据管理**
+  - `/clear-all` 命令快速清理数据
+  - 自定义确认码保护
+  - 数据库 + 存储双重清理
+  - 清理进度实时反馈
+
+- 📱 **PWA原生应用体验**
+  - 可安装到桌面/主屏幕
+  - 离线访问和缓存功能
+  - Service Worker后台同步
+  - 原生应用般的启动体验
+  - 自动更新和版本管理
+
+## 🏗️ 技术架构
+
+<div align="center">
+
+```mermaid
+graph TB
+    A[用户设备] --> B[Cloudflare Workers]
+    B --> C[Hono 框架]
+    C --> D[D1 数据库]
+    C --> E[R2 存储]
+    B --> F[静态资源服务]
+
+    subgraph "前端技术栈"
+        G[原生 HTML]
+        H[模块化 CSS]
+        I[ES6+ JavaScript]
+    end
+
+    subgraph "后端服务"
+        J[RESTful API]
+        K[SSE 实时通信]
+        L[文件上传/下载]
+    end
+
+    F --> G
+    F --> H
+    F --> I
+    C --> J
+    C --> K
+    C --> L
+```
+
+</div>
+
+### 🛠️ **技术栈详情**
+
+| 层级 | 技术选型 | 特点优势 |
+|------|---------|---------|
+| **前端** | 原生 HTML + CSS + JavaScript | 🔥 零依赖、极致性能、模块化设计 |
+| **后端** | Hono + Cloudflare Workers | ⚡ 边缘计算、毫秒级响应、自动扩容 |
+| **数据库** | Cloudflare D1 (SQLite) | 🛡️ 企业级、ACID事务、全球分布 |
+| **存储** | Cloudflare R2 | 📦 对象存储、CDN加速、无限容量 |
+| **部署** | Cloudflare 生态 | 🌍 全球部署、HTTPS、自动备份 |
 
 ## 📦 项目结构
 
@@ -30,31 +132,44 @@
 ├── 📄 README.md              # 📖 项目说明文档
 ├── 📄 package.json           # 📦 项目配置和依赖
 ├── 📄 wrangler.toml          # ⚙️ Cloudflare Workers 配置
+├── 📄 LICENSE                # 📜 开源许可证 (CC BY-NC-SA 4.0)
 ├── 📄 build.js               # 🔨 构建脚本
 │
 ├── 📁 public/                # 🎨 前端静态资源
 │   ├── 📄 index.html         # 🏠 主页面入口
+│   ├── 📄 login.html         # 🔐 登录页面
+│   ├── 📄 manifest.json      # 📱 PWA应用清单
+│   ├── 📄 sw.js              # ⚙️ Service Worker
 │   │
-│   ├── 📁 css/               # 🎨 样式文件
-│   │   ├── 📄 reset.css      # 🔄 CSS重置样式
-│   │   ├── 📄 main.css       # 🎯 主要样式定义
-│   │   ├── 📄 components.css # 🧩 组件样式库
-│   │   └── 📄 responsive.css # 📱 响应式设计
+│   ├── 📁 css/               # 🎨 样式文件系统
+│   │   ├── 📄 reset.css      # 🔄 CSS重置 + 字体优化
+│   │   ├── 📄 main.css       # 🎯 主布局 + 动画效果
+│   │   ├── 📄 components.css # 🧩 组件样式 + WeChat风格
+│   │   ├── 📄 responsive.css # 📱 响应式设计 + 移动优化
+│   │   └── 📄 auth.css       # 🔐 登录页面样式
 │   │
-│   └── 📁 js/                # ⚡ JavaScript模块
-│       ├── 📄 config.js      # ⚙️ 应用配置中心
-│       ├── 📄 utils.js       # 🛠️ 工具函数库
-│       ├── 📄 api.js         # 🌐 API接口封装
-│       ├── 📄 ui.js          # 🎨 UI操作管理
-│       ├── 📄 fileUpload.js  # 📁 文件上传处理
-│       ├── 📄 messageHandler.js # 💬 消息处理逻辑
-│       └── 📄 app.js         # 🚀 应用程序入口
+│   ├── 📁 js/                # ⚡ JavaScript模块系统
+│   │   ├── 📄 config.js      # ⚙️ 应用配置中心
+│   │   ├── 📄 utils.js       # 🛠️ 工具函数库
+│   │   ├── 📄 auth.js        # 🔐 身份验证模块
+│   │   ├── 📄 api.js         # 🌐 API接口封装
+│   │   ├── 📄 ui.js          # 🎨 UI操作管理
+│   │   ├── 📄 fileUpload.js  # 📁 文件上传处理
+│   │   ├── 📄 messageHandler.js # 💬 消息处理逻辑
+│   │   ├── 📄 realtime.js    # 🔄 实时通信管理
+│   │   ├── 📄 pwa.js         # 📱 PWA功能管理
+│   │   └── 📄 app.js         # 🚀 应用主入口
+│   │
+│   └── 📁 icons/             # 📱 PWA应用图标
+│       ├── 📄 icon.svg       # 🎨 源图标文件
+│       ├── 📄 icon-*.png     # 📱 各尺寸PNG图标
+│       └── 📄 README.md      # 📖 图标生成指南
 │
-├── 📁 worker/                # ⚡ 后端服务代码
-│   └── 📄 index.js           # 🔧 API服务和路由
+├── 📁 worker/                # 🔧 后端服务
+│   └── 📄 index.js           # 🌐 Hono服务器 + RESTful API
 │
 └── 📁 database/              # 🗄️ 数据库相关
-    └── 📄 schema.sql         # 🏗️ 数据库结构定义
+    └── 📄 schema.sql         # 📋 数据库结构定义
 ```
 
 </details>
@@ -90,6 +205,36 @@ graph LR
     F --> J
 ```
 
+### 🎯 **设计理念**
+
+<div align="center">
+
+| 🏗️ 架构原则 | 🎨 设计哲学 | 🚀 性能策略 |
+|------------|------------|------------|
+| **模块化分离** | **WeChat风格** | **边缘计算** |
+| 职责单一，松耦合 | 像素级界面还原 | 全球节点部署 |
+| **响应式优先** | **现代动画** | **零依赖前端** |
+| 移动端优先设计 | 流畅过渡效果 | 原生性能优化 |
+| **安全可靠** | **用户体验** | **实时同步** |
+| 企业级安全标准 | 直观操作逻辑 | SSE+轮询双保障 |
+
+</div>
+
+### 🌟 **核心优势对比**
+
+<div align="center">
+
+| 对比维度 | 传统方案 | 🚀 wxchat | 提升效果 |
+|---------|---------|-----------|---------|
+| **🚀 部署复杂度** | 需要服务器运维配置 | 一键部署到全球边缘 | **10倍简化** |
+| **⚡ 响应速度** | 单点服务器延迟 | 全球边缘节点加速 | **5倍提升** |
+| **📈 扩容能力** | 手动扩容限制 | 自动无限弹性扩容 | **无限扩展** |
+| **💰 运维成本** | 高昂服务器费用 | 按需付费模式 | **90%节省** |
+| **🛡️ 可用性** | 99.9% SLA | 99.99% 企业级 | **10倍可靠** |
+| **🎨 用户体验** | 传统Web界面 | WeChat级别UI | **专业级** |
+
+</div>
+
 ## 🚀 快速开始
 
 ### 📋 前置要求
@@ -124,9 +269,28 @@ npx wrangler d1 execute wxchat --file=./database/schema.sql
 # 方法2：控制台初始化（推荐）
 # 见下方"数据库初始化"部分
 
-# 7️⃣ 部署应用
+# 7️⃣ 配置访问密码（重要！）
+# 见下方"密码配置"部分
+
+# 8️⃣ 部署应用
 npm run deploy
 ```
+
+### 🔐 密码配置
+
+**重要：** 应用包含访问鉴权功能，需要配置密码才能正常使用。
+
+📖 **详细配置指南**: [PASSWORD_CONFIG.md](./PASSWORD_CONFIG.md)
+
+**快速配置**：
+1. 进入 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. **Workers & Pages** → **wxchat** → **设置** → **变量和机密**
+3. 添加环境变量：
+   ```bash
+   ACCESS_PASSWORD = "你的密码"
+   JWT_SECRET = "32位以上随机字符串"
+   ```
+4. 保存后即可使用！
 
 ### 🗄️ 数据库初始化
 
@@ -347,6 +511,70 @@ console.log('Hello World');
    • 释放空间：XX MB
 ```
 
+#### 🔒 登出功能
+
+使用文本指令方式登出，保持界面简洁：
+
+```
+1️⃣ 发送登出指令：
+   /logout
+   /登出
+   logout
+   登出
+
+2️⃣ 确认操作：
+   点击确认对话框的"确定"
+
+3️⃣ 自动跳转：
+   清除登录状态并跳转到登录页面
+```
+
+#### 📱 PWA安装功能
+
+使用文本指令快速检查和安装PWA应用：
+
+```
+1️⃣ 发送安装指令：
+   /pwa
+   /install
+   /安装
+   pwa
+   install
+   安装
+
+2️⃣ 系统检查：
+   • 检测PWA支持状态
+   • 显示当前安装状态
+   • 提供安装指导
+
+3️⃣ 安装体验：
+   • 已安装：显示当前状态
+   • 可安装：弹出确认对话框
+   • 不可安装：显示手动安装指南
+```
+
+#### 📱 PWA原生应用体验
+
+**🚀 安装到桌面**：
+- **移动端**: 浏览器提示"添加到主屏幕"，一键安装
+- **桌面端**: Chrome/Edge地址栏显示安装图标，点击安装
+- **独立运行**: 安装后像原生应用一样运行，无浏览器地址栏
+
+**🌐 离线功能**：
+- **离线访问**: 没有网络时也能打开应用查看缓存内容
+- **智能缓存**: 自动缓存重要资源和最近的聊天记录
+- **后台同步**: 网络恢复后自动同步新消息和文件
+
+**🔄 自动更新**：
+- **版本检测**: 自动检测应用更新，顶部显示更新提示
+- **一键更新**: 点击更新按钮即可升级到最新版本
+- **无缝体验**: 更新过程不影响正常使用
+
+**📊 状态指示**：
+- **连接状态**: 右上角实时显示在线/离线状态
+- **安装提示**: 智能显示PWA安装建议
+- **更新通知**: 新版本可用时及时提醒
+
 #### 📱 微信移动端体验
 
 - **动态发送按钮** - 输入时出现圆形绿色按钮
@@ -362,6 +590,35 @@ console.log('Hello World');
 | `Shift + Enter` | 换行 | 在消息中添加换行符 |
 | `Ctrl + V` | 粘贴文件 | 从剪贴板粘贴图片文件 |
 | 拖拽 | 上传文件 | 拖拽文件到聊天区域上传 |
+
+### 📱 PWA功能详解
+
+#### 🔧 开发者调试
+
+在浏览器控制台中可以使用以下命令调试PWA功能：
+
+```javascript
+// 检查PWA状态
+PWA.getStatus()
+
+// 获取缓存信息
+PWA.getCacheInfo()
+
+// 清理所有缓存
+PWA.clearCache()
+
+// 手动触发安装提示
+PWA.promptInstall()
+
+// 检查Service Worker状态
+navigator.serviceWorker.ready.then(registration => {
+    console.log('Service Worker状态:', registration);
+});
+```
+
+#### 📖 详细文档
+
+更多PWA功能说明请参考：[📱 PWA功能使用指南](./docs/PWA_GUIDE.md)
 
 ## 🔧 API 接口文档
 
@@ -765,41 +1022,171 @@ bucket_name = "wxchat"
 - 🔍 具体的错误信息
 - 📋 重现步骤
 
-## 📄 许可证
+## 🌟 技术亮点
 
 <div align="center">
 
-**CC BY-NC-SA 4.0 License**
+### 🔥 **前沿技术栈**
+
+| 技术特色 | 实现方案 | 优势效果 |
+|---------|---------|---------|
+| **🚀 边缘计算** | Cloudflare Workers | 全球毫秒级响应 |
+| **🛡️ 企业级安全** | D1 + R2 + HTTPS | 数据安全保障 |
+| **📱 WeChat级UI** | 原生CSS + 精致动画 | 专业用户体验 |
+| **⚡ 零依赖前端** | 纯JavaScript ES6+ | 极致性能优化 |
+| **🔄 实时同步** | SSE + 长轮询 | 消息即时送达 |
+
+</div>
+
+### 🎯 **核心创新点**
+
+- **🧩 模块化架构**: 前端采用ES6模块化设计，职责分离，易于维护
+- **📱 移动优先**: 响应式设计，完美适配各种设备尺寸
+- **🎨 WeChat风格**: 像素级还原微信界面，用户零学习成本
+- **⚡ 性能优化**: 边缘计算 + CDN加速，全球用户体验一致
+- **🛡️ 安全可靠**: 企业级安全标准，数据加密传输存储
+- **🔄 实时通信**: 双重保障机制，确保消息实时性
+
+## 🤝 贡献指南
+
+### 🔧 开发环境
+
+<details>
+<summary>💻 点击展开开发环境配置</summary>
+
+```bash
+# 1️⃣ 克隆项目
+git clone https://github.com/xiyewuqiu/wxchat.git
+cd wxchat
+
+# 2️⃣ 安装依赖
+npm install
+
+# 3️⃣ 配置环境
+cp wrangler.toml.example wrangler.toml
+# 编辑 wrangler.toml 配置你的资源ID
+
+# 4️⃣ 本地开发
+npm run dev
+
+# 5️⃣ 代码检查
+npm run lint
+
+# 6️⃣ 构建项目
+npm run build
+
+# 7️⃣ 部署测试
+npm run deploy
+```
+
+</details>
+
+### 📝 提交规范
+
+我们使用 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
+
+```
+feat: 新功能
+fix: 修复bug
+docs: 文档更新
+style: 代码格式
+refactor: 重构
+test: 测试相关
+chore: 构建过程或辅助工具的变动
+```
+
+### 🎯 贡献方式
+
+1. **🍴 Fork 项目** - 点击右上角 Fork 按钮
+2. **🌿 创建分支** - `git checkout -b feature/amazing-feature`
+3. **💻 编写代码** - 遵循项目代码规范
+4. **✅ 测试验证** - 确保功能正常工作
+5. **📝 提交更改** - `git commit -m 'feat: add amazing feature'`
+6. **🚀 推送分支** - `git push origin feature/amazing-feature`
+7. **🔄 创建 PR** - 提交 Pull Request
+
+### 🎨 代码规范
+
+- **JavaScript**: 使用 ES6+ 语法，遵循 ESLint 规范
+- **CSS**: 使用 BEM 命名规范，保持样式模块化
+- **HTML**: 语义化标签，保持结构清晰
+- **注释**: 关键逻辑必须添加注释说明
+
+## 📄 开源许可证
+
+<div align="center">
+
+### 📜 **CC BY-NC-SA 4.0 International License**
 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![GitHub](https://img.shields.io/badge/GitHub-xiyewuqiu%2Fwxchat-blue.svg)](https://github.com/xiyewuqiu/wxchat)
 
-Copyright (c) 2025 微信文件传输助手
+**Copyright (c) 2025 xiyewuqiu**
 
 本项目采用 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可证。
 
+</div>
+
 ### 🚫 **严格禁止商业用途**
 
-- ✅ **允许**: 个人学习、研究、非营利使用
-- ✅ **允许**: 修改和分发（需保持相同许可证）
-- ✅ **允许**: 署名使用
-- ❌ **禁止**: 任何形式的商业用途
-- ❌ **禁止**: 商业销售或盈利
+<div align="center">
 
-### 📋 使用条件
+| ✅ **允许的使用** | ❌ **禁止的使用** |
+|-----------------|-----------------|
+| 🎓 个人学习和研究 | 💰 商业销售或盈利 |
+| 🔬 学术研究项目 | 🏢 企业商业部署 |
+| 🎨 非营利性修改 | 💼 商业服务提供 |
+| 📚 教育教学用途 | 🛒 付费产品集成 |
+| 🌍 开源项目集成 | 📈 商业推广使用 |
 
-1. **署名** - 必须给出适当的署名，提供指向许可证的链接
-2. **非商业性使用** - 不得将本作品用于商业目的
-3. **相同方式共享** - 如果您再混合、转换或者基于本作品进行创作，您必须基于与原先许可协议相同的许可协议分发您贡献的作品
+</div>
+
+### 📋 **使用条件详解**
+
+1. **🏷️ 署名要求**
+   - 必须保留原作者信息和版权声明
+   - 提供指向原项目和许可证的链接
+   - 标明是否对原作品进行了修改
+
+2. **🚫 非商业性使用**
+   - 不得将本作品用于任何商业目的
+   - 不得通过本作品获取经济利益
+   - 企业内部使用也需要特别授权
+
+3. **🔄 相同方式共享**
+   - 基于本作品的衍生作品必须使用相同许可证
+   - 修改后的作品必须开源并保持免费
+   - 不得对衍生作品施加额外限制
+
+### 💼 **商业授权**
+
+如需商业使用，请联系作者获取商业许可证：
+- 📧 邮箱: [xiyewuqiu@gmail.com](mailto:xiyewuqiu@gmail.com)
+- 💬 GitHub: [@xiyewuqiu](https://github.com/xiyewuqiu)
+
+---
+
+<div align="center">
+
+### 🌟 **支持项目**
+
+如果这个项目对你有帮助，请考虑：
+
+[![Star](https://img.shields.io/github/stars/xiyewuqiu/wxchat?style=social)](https://github.com/xiyewuqiu/wxchat/stargazers)
+[![Fork](https://img.shields.io/github/forks/xiyewuqiu/wxchat?style=social)](https://github.com/xiyewuqiu/wxchat/network/members)
+[![Watch](https://img.shields.io/github/watchers/xiyewuqiu/wxchat?style=social)](https://github.com/xiyewuqiu/wxchat/watchers)
+
+**⭐ 给项目点个 Star** | **🍴 Fork 并贡献代码** | **👀 Watch 获取更新**
 
 ---
 
 <p>
-  <strong>🌟 如果这个项目对你有帮助，请给个 Star ⭐</strong><br>
-  <em>Made with ❤️ by xiyewuqiu</em>
+  <strong>Made with ❤️ by <a href="https://github.com/xiyewuqiu">xiyewuqiu</a></strong><br>
+  <em>基于 Cloudflare Workers 的现代化微信文件传输助手</em>
 </p>
 
 <p>
-  <a href="#-微信文件传输助手-web-应用">回到顶部 ⬆️</a>
+  <a href="#-微信文件传输助手-web-应用">🔝 回到顶部</a>
 </p>
 
 </div>

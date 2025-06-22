@@ -25,7 +25,9 @@ class RealtimeManager {
         }
 
         try {
-            const url = `/api/events?deviceId=${encodeURIComponent(this.deviceId)}`;
+            // 获取认证token
+            const token = Auth && Auth.getToken() ? Auth.getToken() : '';
+            const url = `/api/events?deviceId=${encodeURIComponent(this.deviceId)}&token=${encodeURIComponent(token)}`;
             this.eventSource = new EventSource(url);
 
             // 连接成功
@@ -136,7 +138,9 @@ class RealtimeManager {
             const lastMessageId = this.getLastMessageId();
             const url = `/api/poll?deviceId=${encodeURIComponent(this.deviceId)}&lastMessageId=${lastMessageId}&timeout=30`;
 
-            const response = await fetch(url);
+            // 添加认证头
+            const headers = Auth ? Auth.addAuthHeader({}) : {};
+            const response = await fetch(url, { headers });
             const data = await response.json();
 
             if (data.success && data.hasNewMessages) {

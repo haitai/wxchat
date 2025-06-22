@@ -152,6 +152,17 @@ const UI = {
             messageContainer.appendChild(fragment);
         }
 
+        // 处理需要加载图片的消息
+        messages.forEach(message => {
+            if (message._needsImageLoad) {
+                const { r2Key, safeId } = message._needsImageLoad;
+                // 使用setTimeout确保DOM完全插入后再加载图片
+                setTimeout(() => {
+                    this.loadImageAsync(r2Key, safeId);
+                }, 10);
+            }
+        });
+
         // 批量添加淡入动画
         if (newElements.length > 0) {
             requestAnimationFrame(() => {
@@ -263,7 +274,24 @@ const UI = {
 
         let imagePreview = '';
         if (isImage) {
-            imagePreview = `<div class="image-preview"><img src="/api/files/download/${message.r2_key}" alt="${this.escapeHtml(message.original_name)}" loading="lazy"></div>`;
+            // 创建安全的ID（移除特殊字符）
+            const safeId = this.createSafeId(message.r2_key);
+            const imageId = `img-${safeId}`;
+
+            imagePreview = `<div class="image-preview" id="preview-${safeId}">
+                <div class="image-loading" id="loading-${safeId}">
+                    <div class="loading-spinner">⏳</div>
+                    <span>加载图片中...</span>
+                </div>
+                <img id="${imageId}" alt="${this.escapeHtml(message.original_name)}" style="display: none;" />
+                <div class="image-error" id="error-${safeId}" style="display: none;">
+                    <span>🖼️ 图片加载失败</span>
+                    <button onclick="UI.retryLoadImage('${message.r2_key}', '${safeId}')" class="retry-btn">重试</button>
+                </div>
+            </div>`;
+
+            // 标记需要异步加载图片（在DOM插入后执行）
+            message._needsImageLoad = { r2Key: message.r2_key, safeId: safeId };
         }
 
         return `<div class="message-content"><div class="file-message"><div class="file-info"><div class="file-icon">${fileIcon}</div><div class="file-details"><div class="file-name">${this.escapeHtml(message.original_name)}</div><div class="file-size">${fileSize}</div></div><button class="download-btn" onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">⬇️ 下载</button></div>${imagePreview}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div>`;
@@ -277,7 +305,24 @@ const UI = {
 
         let imagePreview = '';
         if (isImage) {
-            imagePreview = `<div class="image-preview"><img src="/api/files/download/${message.r2_key}" alt="${this.escapeHtml(message.original_name)}" loading="lazy"></div>`;
+            // 创建安全的ID（移除特殊字符）
+            const safeId = this.createSafeId(message.r2_key);
+            const imageId = `img-${safeId}`;
+
+            imagePreview = `<div class="image-preview" id="preview-${safeId}">
+                <div class="image-loading" id="loading-${safeId}">
+                    <div class="loading-spinner">⏳</div>
+                    <span>加载图片中...</span>
+                </div>
+                <img id="${imageId}" alt="${this.escapeHtml(message.original_name)}" style="display: none;" />
+                <div class="image-error" id="error-${safeId}" style="display: none;">
+                    <span>🖼️ 图片加载失败</span>
+                    <button onclick="UI.retryLoadImage('${message.r2_key}', '${safeId}')" class="retry-btn">重试</button>
+                </div>
+            </div>`;
+
+            // 标记需要异步加载图片（在DOM插入后执行）
+            message._needsImageLoad = { r2Key: message.r2_key, safeId: safeId };
         }
 
         return `<div class="message ${isOwn ? 'own' : 'other'} fade-in"><div class="message-content"><div class="file-message"><div class="file-info"><div class="file-icon">${fileIcon}</div><div class="file-details"><div class="file-name">${this.escapeHtml(message.original_name)}</div><div class="file-size">${fileSize}</div></div><button class="download-btn" onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">⬇️ 下载</button></div>${imagePreview}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div></div>`;
@@ -306,6 +351,15 @@ const UI = {
         this.elements.messageList.appendChild(messageElement);
         this.messageCache.set(message.id, messageElement);
 
+        // 检查是否需要加载图片（DOM插入后）
+        if (message._needsImageLoad) {
+            const { r2Key, safeId } = message._needsImageLoad;
+            // 使用setTimeout确保DOM完全插入后再加载图片
+            setTimeout(() => {
+                this.loadImageAsync(r2Key, safeId);
+            }, 10);
+        }
+
         // 添加淡入动画
         requestAnimationFrame(() => {
             messageElement.classList.add('fade-in');
@@ -329,7 +383,24 @@ const UI = {
         // 使用requestAnimationFrame确保DOM更新完成后再滚动
         requestAnimationFrame(() => {
             const container = this.elements.messageList;
-            container.scrollTop = container.scrollHeight;
+
+            // iOS Safari 特殊处理
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            if (isIOS) {
+                // iOS上使用smooth滚动可能有问题，使用多重方法确保滚动
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'auto' // iOS上auto比smooth更可靠
+                });
+
+                // 备用方法
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 50);
+            } else {
+                container.scrollTop = container.scrollHeight;
+            }
         });
     },
     
@@ -443,10 +514,28 @@ const UI = {
         }
     },
 
-    // 设置连接状态（简化版，仅用于控制台日志）
+    // 设置连接状态
     setConnectionStatus(status) {
         console.log(`连接状态: ${status}`);
-        // 可以在这里添加其他状态指示，比如在消息列表中显示状态
+
+        // 创建或更新连接状态指示器
+        let statusElement = document.querySelector('.connection-status');
+
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.className = 'connection-status';
+            document.body.appendChild(statusElement);
+        }
+
+        // 更新状态显示
+        const isOnline = status === 'connected';
+        statusElement.textContent = isOnline ? '已连接' : '离线模式';
+        statusElement.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
+
+        // 如果是离线状态，显示提示
+        if (!isOnline) {
+            Utils.showNotification('已切换到离线模式，部分功能可能受限', 'warning');
+        }
     },
 
     // 显示上传状态
@@ -558,5 +647,73 @@ const UI = {
         toggleButton.title = '切换源码/渲染视图';
         toggleButton.textContent = '📝';
         messageElement.appendChild(toggleButton);
+    },
+
+    // 创建安全的ID（移除特殊字符）
+    createSafeId(str) {
+        return str.replace(/[^a-zA-Z0-9-_]/g, '');
+    },
+
+    // 异步加载图片
+    async loadImageAsync(r2Key, safeId) {
+        try {
+            // 如果没有提供safeId，则生成一个
+            if (!safeId) {
+                safeId = this.createSafeId(r2Key);
+            }
+
+            // 获取相关元素
+            const loadingElement = document.getElementById(`loading-${safeId}`);
+            const imageElement = document.getElementById(`img-${safeId}`);
+            const errorElement = document.getElementById(`error-${safeId}`);
+
+            if (!loadingElement || !imageElement || !errorElement) {
+                console.warn('图片元素未找到:', r2Key);
+                return;
+            }
+
+            // 显示加载状态
+            loadingElement.style.display = 'flex';
+            imageElement.style.display = 'none';
+            errorElement.style.display = 'none';
+
+            // 获取图片blob URL
+            const blobUrl = await API.getImageBlobUrl(r2Key);
+
+            // 设置图片源并等待加载完成
+            await new Promise((resolve, reject) => {
+                imageElement.onload = resolve;
+                imageElement.onerror = reject;
+                imageElement.src = blobUrl;
+            });
+
+            // 显示图片，隐藏加载状态
+            loadingElement.style.display = 'none';
+            imageElement.style.display = 'block';
+
+        } catch (error) {
+            console.error('图片加载失败:', error);
+
+            // 显示错误状态
+            const safeIdToUse = safeId || this.createSafeId(r2Key);
+            const loadingElement = document.getElementById(`loading-${safeIdToUse}`);
+            const imageElement = document.getElementById(`img-${safeIdToUse}`);
+            const errorElement = document.getElementById(`error-${safeIdToUse}`);
+
+            if (loadingElement) loadingElement.style.display = 'none';
+            if (imageElement) imageElement.style.display = 'none';
+            if (errorElement) errorElement.style.display = 'flex';
+        }
+    },
+
+    // 重试加载图片
+    async retryLoadImage(r2Key, safeId) {
+        // 清除可能存在的缓存
+        if (typeof API !== 'undefined' && API.revokeImageBlobUrl) {
+            API.revokeImageBlobUrl(r2Key);
+        }
+
+        // 重新加载
+        await this.loadImageAsync(r2Key, safeId);
     }
 };

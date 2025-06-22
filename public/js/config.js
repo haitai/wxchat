@@ -9,7 +9,11 @@ const CONFIG = {
             FILES_UPLOAD: '/api/files/upload',
             FILES_DOWNLOAD: '/api/files/download',
             SYNC: '/api/sync',
-            CLEAR_ALL: '/api/clear-all'
+            CLEAR_ALL: '/api/clear-all',
+            // 鉴权相关接口
+            AUTH_LOGIN: '/api/auth/login',
+            AUTH_VERIFY: '/api/auth/verify',
+            AUTH_LOGOUT: '/api/auth/logout'
         }
     },
     
@@ -175,6 +179,17 @@ const CONFIG = {
         CONFIRM_MESSAGE: '⚠️ 此操作将永久删除所有聊天记录和文件，无法恢复！\n\n请输入确认码：1234'
     },
 
+    // PWA功能配置
+    PWA: {
+        TRIGGER_COMMANDS: ['/pwa', '/install', '/安装', 'pwa', 'install', '安装'],
+        INSTALL_BENEFITS: [
+            '像原生应用一样使用',
+            '快速启动，无需浏览器',
+            '离线访问缓存内容',
+            '自动更新到最新版本'
+        ]
+    },
+
     // 错误消息
     ERRORS: {
         NETWORK: '网络连接失败，请检查网络',
@@ -207,5 +222,6 @@ Object.freeze(CONFIG.MESSAGE_TYPES);
 Object.freeze(CONFIG.FILE_ICONS);
 Object.freeze(CONFIG.FILE_EXTENSION_ICONS);
 Object.freeze(CONFIG.CLEAR);
+Object.freeze(CONFIG.PWA);
 Object.freeze(CONFIG.ERRORS);
 Object.freeze(CONFIG.SUCCESS);
