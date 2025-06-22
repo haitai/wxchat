@@ -221,9 +221,28 @@ const UI = {
     
     // 渲染文本消息内容
     renderTextMessageContent(message, deviceName, time) {
+        const hasMarkdown = Utils.markdown.hasMarkdownSyntax(message.content);
+        const messageId = `msg-${message.id}`;
+
+        // 默认显示渲染后的内容（如果有markdown语法）
+        const displayContent = hasMarkdown
+            ? Utils.markdown.renderToHtml(message.content)
+            : this.escapeHtml(message.content);
+
+        const textMessageClass = hasMarkdown ? 'text-message markdown-rendered' : 'text-message';
+        const toggleButton = hasMarkdown
+            ? `<button class="markdown-toggle" onclick="UI.toggleMarkdownView('${messageId}')" title="切换源码/渲染视图">📝</button>`
+            : '';
+
         return `
             <div class="message-content">
-                <div class="text-message">${this.escapeHtml(message.content)}</div>
+                <div class="${textMessageClass}" id="${messageId}"
+                     data-original="${this.escapeHtml(message.content)}"
+                     data-rendered="${displayContent.replace(/"/g, '&quot;')}"
+                     data-is-rendered="${hasMarkdown ? 'true' : 'false'}">
+                    ${displayContent}
+                    ${toggleButton}
+                </div>
             </div>
             <div class="message-meta">
                 <span>${deviceName}</span>
@@ -234,10 +253,29 @@ const UI = {
 
     // 渲染文本消息（保留用于兼容性）
     renderTextMessage(message, isOwn, deviceName, time) {
+        const hasMarkdown = Utils.markdown.hasMarkdownSyntax(message.content);
+        const messageId = `msg-${message.id}`;
+
+        // 默认显示渲染后的内容（如果有markdown语法）
+        const displayContent = hasMarkdown
+            ? Utils.markdown.renderToHtml(message.content)
+            : this.escapeHtml(message.content);
+
+        const textMessageClass = hasMarkdown ? 'text-message markdown-rendered' : 'text-message';
+        const toggleButton = hasMarkdown
+            ? `<button class="markdown-toggle" onclick="UI.toggleMarkdownView('${messageId}')" title="切换源码/渲染视图">📝</button>`
+            : '';
+
         return `
             <div class="message ${isOwn ? 'own' : 'other'} fade-in">
                 <div class="message-content">
-                    <div class="text-message">${this.escapeHtml(message.content)}</div>
+                    <div class="${textMessageClass}" id="${messageId}"
+                         data-original="${this.escapeHtml(message.content)}"
+                         data-rendered="${displayContent.replace(/"/g, '&quot;')}"
+                         data-is-rendered="${hasMarkdown ? 'true' : 'false'}">
+                        ${displayContent}
+                        ${toggleButton}
+                    </div>
                 </div>
                 <div class="message-meta">
                     <span>${deviceName}</span>
@@ -572,5 +610,39 @@ const UI = {
         if (timeElement) {
             timeElement.innerHTML = `<span class="message-time">${Utils.formatTime(timestamp)}</span>`;
         }
+    },
+
+    // 切换Markdown视图
+    toggleMarkdownView(messageId) {
+        const messageElement = document.getElementById(messageId);
+        if (!messageElement) return;
+
+        const isCurrentlyRendered = messageElement.dataset.isRendered === 'true';
+        const originalContent = messageElement.dataset.original;
+        const renderedContent = messageElement.dataset.rendered.replace(/&quot;/g, '"');
+
+        // 清除现有内容
+        messageElement.innerHTML = '';
+
+        if (isCurrentlyRendered) {
+            // 切换到源码视图
+            const textNode = document.createTextNode(originalContent);
+            messageElement.appendChild(textNode);
+            messageElement.className = 'text-message';
+            messageElement.dataset.isRendered = 'false';
+        } else {
+            // 切换到渲染视图
+            messageElement.innerHTML = renderedContent;
+            messageElement.className = 'text-message markdown-rendered';
+            messageElement.dataset.isRendered = 'true';
+        }
+
+        // 重新添加切换按钮
+        const toggleButton = document.createElement('button');
+        toggleButton.className = 'markdown-toggle';
+        toggleButton.onclick = () => this.toggleMarkdownView(messageId);
+        toggleButton.title = '切换源码/渲染视图';
+        toggleButton.textContent = '📝';
+        messageElement.appendChild(toggleButton);
     }
 };

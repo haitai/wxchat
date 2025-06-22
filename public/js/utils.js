@@ -175,6 +175,60 @@ const Utils = {
             return permission === 'granted';
         }
         return false;
+    },
+
+    // HTML转义
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    // Markdown相关工具函数
+    markdown: {
+        // 检测文本是否包含markdown语法
+        hasMarkdownSyntax(text) {
+            if (!text || typeof text !== 'string') return false;
+
+            const markdownPatterns = [
+                /^#{1,6}\s+/m,           // 标题 # ## ###
+                /\*\*[^*]+\*\*/,         // 粗体 **text**
+                /\*[^*]+\*/,             // 斜体 *text*
+                /^[-*+]\s+/m,            // 列表 - item
+                /^>\s+/m,                // 引用 > text
+                /```[\s\S]*?```/,        // 代码块 ```code```
+                /`[^`]+`/,               // 行内代码 `code`
+                /\[([^\]]+)\]\(([^)]+)\)/, // 链接 [text](url)
+                /^---+$/m,               // 分割线 ---
+                /^\d+\.\s+/m             // 有序列表 1. item
+            ];
+
+            return markdownPatterns.some(pattern => pattern.test(text));
+        },
+
+        // 渲染markdown为HTML
+        renderToHtml(text) {
+            if (!window.marked) {
+                console.warn('Marked.js 未加载，返回原始文本');
+                return Utils.escapeHtml(text);
+            }
+
+            try {
+                // 配置marked选项
+                marked.setOptions({
+                    breaks: true,        // 支持换行
+                    gfm: true,          // GitHub风格markdown
+                    sanitize: false,    // 不过度清理HTML
+                    smartLists: true,   // 智能列表
+                    smartypants: false  // 不转换引号
+                });
+
+                return marked.parse(text);
+            } catch (error) {
+                console.error('Markdown渲染失败:', error);
+                return Utils.escapeHtml(text);
+            }
+        }
     }
 };
 

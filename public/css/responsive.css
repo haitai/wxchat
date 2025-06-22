@@ -32,7 +32,7 @@
     }
 
     .message-content {
-        padding: 0.8rem 1rem;
+        padding: 0.7rem 0.9rem;
     }
 
     .message-list {
@@ -101,9 +101,19 @@
     }
 
     .message-content {
-        padding: 0.7rem 0.9rem;
+        padding: 0.6rem 0.8rem;
         font-size: 0.9rem;
         border-radius: 16px;
+    }
+
+    /* 手机设备上的文本消息优化 */
+    .message-content .text-message:not(.markdown-rendered) {
+        padding: 0;
+        margin: 0;
+    }
+
+    .message-content .text-message.markdown-rendered {
+        padding: 0.2rem 20px 0.2rem 0;
     }
 
     .message-meta {
@@ -199,6 +209,16 @@
         padding: 0.5rem 0.7rem;
         font-size: 0.85rem;
     }
+
+    /* 超小屏幕的文本消息优化 */
+    .message-content .text-message:not(.markdown-rendered) {
+        padding: 0;
+        margin: 0;
+    }
+
+    .message-content .text-message.markdown-rendered {
+        padding: 0.15rem 18px 0.15rem 0;
+    }
     
     .file-name {
         font-size: 0.85rem;
@@ -263,17 +283,27 @@
     .app {
         max-width: 900px;
     }
-    
+
     .message {
         max-width: 60%;
     }
-    
+
     .app-header h1 {
         font-size: 1.6rem;
     }
-    
+
     .message-content {
         font-size: 1rem;
+    }
+
+    /* 高分辨率屏幕的文本消息优化 */
+    .message-content .text-message:not(.markdown-rendered) {
+        padding: 0;
+        margin: 0;
+    }
+
+    .message-content .text-message.markdown-rendered {
+        padding: 0.25rem 24px 0.25rem 0;
     }
 }
 

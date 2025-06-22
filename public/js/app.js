@@ -9,18 +9,15 @@ class WeChatApp {
     // 初始化应用
     async init() {
         try {
-            console.log('🚀 微信文件传输助手启动中...');
-            
             // 检查浏览器兼容性
             this.checkBrowserCompatibility();
-            
+
             // 初始化设备ID
             this.deviceId = Utils.getDeviceId();
-            console.log('📱 设备ID:', this.deviceId);
-            
+
             // 请求通知权限
             await Utils.requestNotificationPermission();
-            
+
             // 初始化各个模块
             UI.init();
             FileUpload.init();
@@ -33,13 +30,10 @@ class WeChatApp {
             // 标记为已初始化
             this.isInitialized = true;
 
-            console.log('✅ 应用初始化完成');
-            
             // 显示欢迎消息
             this.showWelcomeMessage();
-            
+
         } catch (error) {
-            console.error('❌ 应用初始化失败:', error);
             this.showInitError(error);
         }
     }
@@ -68,7 +62,7 @@ class WeChatApp {
             throw new Error('浏览器不支持ES6语法，请使用现代浏览器');
         }
         
-        console.log('✅ 浏览器兼容性检查通过');
+        // 浏览器兼容性检查通过
     }
     
     // 显示欢迎消息

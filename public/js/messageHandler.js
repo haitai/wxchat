@@ -24,7 +24,6 @@ const MessageHandler = {
         // 如果实时连接失败，启用轮询
         setTimeout(() => {
             if (!window.Realtime || !window.Realtime.isConnectionAlive()) {
-                console.log('🔄 实时连接未建立，启用轮询模式');
                 this.startAutoRefresh();
             }
         }, 2000);
@@ -34,7 +33,6 @@ const MessageHandler = {
     initRealtime() {
         // 检查是否支持SSE
         if (typeof EventSource === 'undefined') {
-            console.warn('⚠️ 浏览器不支持Server-Sent Events，使用轮询模式');
             this.startAutoRefresh();
             return;
         }
@@ -47,21 +45,17 @@ const MessageHandler = {
 
             // 监听实时事件
             Realtime.on('connected', () => {
-                console.log('🔗 实时连接已建立，停止轮询');
                 this.stopAutoRefresh();
             });
 
             Realtime.on('disconnected', () => {
-                console.log('❌ 实时连接断开，启用轮询');
                 this.startAutoRefresh();
             });
 
             Realtime.on('newMessages', (data) => {
-                console.log('📨 收到新消息通知:', data);
                 this.loadMessages();
             });
         } else {
-            console.warn('⚠️ Realtime模块未加载，使用轮询模式');
             this.startAutoRefresh();
         }
     },
@@ -263,7 +257,7 @@ const MessageHandler = {
             this.loadMessages();
         }, CONFIG.UI.AUTO_REFRESH_INTERVAL);
         
-        console.log(`自动刷新已启动，间隔: ${CONFIG.UI.AUTO_REFRESH_INTERVAL}ms`);
+        // 自动刷新已启动
     },
     
     // 停止自动刷新
@@ -271,7 +265,7 @@ const MessageHandler = {
         if (this.autoRefreshTimer) {
             clearInterval(this.autoRefreshTimer);
             this.autoRefreshTimer = null;
-            console.log('自动刷新已停止');
+            // 自动刷新已停止
         }
     },
     
@@ -296,12 +290,10 @@ const MessageHandler = {
     // 处理网络状态变化
     handleOnlineStatusChange() {
         if (navigator.onLine) {
-            console.log('网络已连接，重新开始自动刷新');
             UI.setConnectionStatus('connected');
             this.restartAutoRefresh();
             this.loadMessages(false); // 网络恢复时不强制滚动
         } else {
-            console.log('网络已断开，停止自动刷新');
             UI.setConnectionStatus('disconnected');
             this.stopAutoRefresh();
             UI.showError('网络连接已断开');
@@ -318,16 +310,14 @@ const MessageHandler = {
         UI.showEmpty('消息已清空');
     },
     
-    // 搜索消息（如果需要）
+    // 搜索消息（预留功能）
     searchMessages(keyword) {
-        // 这里可以实现消息搜索功能
-        console.log('搜索消息:', keyword);
+        // 预留：消息搜索功能
     },
-    
-    // 导出消息（如果需要）
+
+    // 导出消息（预留功能）
     exportMessages() {
-        // 这里可以实现消息导出功能
-        console.log('导出消息');
+        // 预留：消息导出功能
     }
 };
 

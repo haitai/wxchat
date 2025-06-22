@@ -4,10 +4,12 @@ class RealtimeManager {
         this.eventSource = null;
         this.isConnected = false;
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
+        this.maxReconnectAttempts = 3; // 减少SSE重试次数
         this.reconnectDelay = 1000; // 1秒
         this.deviceId = null;
         this.listeners = new Map();
+        this.longPollingActive = false;
+        this.longPollingTimeout = null;
     }
 
     // 初始化实时连接
@@ -28,7 +30,6 @@ class RealtimeManager {
 
             // 连接成功
             this.eventSource.addEventListener('connection', (event) => {
-                console.log('🔗 实时连接已建立');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.emit('connected');
@@ -39,37 +40,33 @@ class RealtimeManager {
             this.eventSource.addEventListener('message', (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('📨 收到实时消息:', data);
-                    
+
                     if (data.newMessages > 0) {
                         // 有新消息，触发刷新
                         this.emit('newMessages', data);
                         MessageHandler.loadMessages();
                     }
                 } catch (error) {
-                    console.error('解析实时消息失败:', error);
+                    // 静默处理解析错误
                 }
             });
 
             // 心跳检测
             this.eventSource.addEventListener('heartbeat', (event) => {
-                console.log('💓 收到心跳');
                 this.emit('heartbeat');
             });
 
             // 连接错误
             this.eventSource.onerror = (event) => {
-                console.error('❌ 实时连接错误:', event);
                 this.isConnected = false;
                 this.emit('disconnected');
                 UI.setConnectionStatus('disconnected');
-                
+
                 // 自动重连
                 this.handleReconnect();
             };
 
         } catch (error) {
-            console.error('创建SSE连接失败:', error);
             this.handleReconnect();
         }
     }
@@ -80,6 +77,7 @@ class RealtimeManager {
             this.eventSource.close();
             this.eventSource = null;
         }
+        this.stopLongPolling();
         this.isConnected = false;
         this.emit('disconnected');
     }
@@ -87,15 +85,13 @@ class RealtimeManager {
     // 处理重连逻辑
     handleReconnect() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('❌ 达到最大重连次数，停止重连');
-            UI.setConnectionStatus('failed');
+            this.fallbackToLongPolling();
             return;
         }
 
         this.reconnectAttempts++;
         const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // 指数退避
 
-        console.log(`🔄 ${delay}ms后尝试第${this.reconnectAttempts}次重连...`);
         UI.setConnectionStatus('reconnecting');
 
         setTimeout(() => {
@@ -105,9 +101,90 @@ class RealtimeManager {
         }, delay);
     }
 
+    // 降级到长轮询
+    fallbackToLongPolling() {
+        this.disconnect();
+        this.startLongPolling();
+    }
+
+    // 开始长轮询
+    startLongPolling() {
+        if (this.longPollingActive) {
+            return;
+        }
+
+        this.longPollingActive = true;
+        this.longPoll();
+    }
+
+    // 停止长轮询
+    stopLongPolling() {
+        this.longPollingActive = false;
+        if (this.longPollingTimeout) {
+            clearTimeout(this.longPollingTimeout);
+            this.longPollingTimeout = null;
+        }
+    }
+
+    // 长轮询实现
+    async longPoll() {
+        if (!this.longPollingActive) {
+            return;
+        }
+
+        try {
+            const lastMessageId = this.getLastMessageId();
+            const url = `/api/poll?deviceId=${encodeURIComponent(this.deviceId)}&lastMessageId=${lastMessageId}&timeout=30`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success && data.hasNewMessages) {
+                this.emit('newMessages', { newMessages: data.newMessageCount });
+                MessageHandler.loadMessages();
+            }
+
+            // 设置连接状态
+            if (!this.isConnected) {
+                this.isConnected = true;
+                this.emit('connected');
+                UI.setConnectionStatus('connected');
+            }
+
+        } catch (error) {
+            this.isConnected = false;
+            this.emit('disconnected');
+            UI.setConnectionStatus('disconnected');
+        }
+
+        // 继续下一次轮询
+        if (this.longPollingActive) {
+            this.longPollingTimeout = setTimeout(() => {
+                this.longPoll();
+            }, 1000); // 1秒后继续
+        }
+    }
+
+    // 获取最后一条消息ID
+    getLastMessageId() {
+        const messages = MessageHandler.lastMessages || [];
+        if (messages.length > 0) {
+            return messages[messages.length - 1].id || '0';
+        }
+        return '0';
+    }
+
     // 检查连接状态
     isConnectionAlive() {
-        return this.isConnected && this.eventSource && this.eventSource.readyState === EventSource.OPEN;
+        // SSE连接活跃
+        if (this.eventSource && this.eventSource.readyState === EventSource.OPEN) {
+            return true;
+        }
+        // 长轮询活跃
+        if (this.longPollingActive && this.isConnected) {
+            return true;
+        }
+        return false;
     }
 
     // 事件监听器
@@ -150,7 +227,6 @@ class RealtimeManager {
         }
         
         // SSE连接异常，降级到轮询
-        console.log('🔄 SSE连接异常，使用轮询模式');
         MessageHandler.loadMessages();
     }
 
@@ -173,9 +249,11 @@ class RealtimeManager {
     // 销毁管理器
     destroy() {
         this.disconnect();
+        this.stopLongPolling();
         this.listeners.clear();
         this.deviceId = null;
         this.reconnectAttempts = 0;
+        this.longPollingActive = false;
     }
 }
 
@@ -184,14 +262,12 @@ const Realtime = new RealtimeManager();
 
 // 网络状态监听
 window.addEventListener('online', () => {
-    console.log('🌐 网络已连接');
     if (!Realtime.isConnectionAlive()) {
         Realtime.connect();
     }
 });
 
 window.addEventListener('offline', () => {
-    console.log('📴 网络已断开');
     UI.setConnectionStatus('offline');
 });
 
@@ -200,7 +276,6 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         // 页面变为可见时，检查连接状态
         if (!Realtime.isConnectionAlive()) {
-            console.log('👁️ 页面可见，检查连接状态');
             Realtime.connect();
         }
     }
