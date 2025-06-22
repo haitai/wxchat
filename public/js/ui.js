@@ -234,21 +234,7 @@ const UI = {
             ? `<button class="markdown-toggle" onclick="UI.toggleMarkdownView('${messageId}')" title="切换源码/渲染视图">📝</button>`
             : '';
 
-        return `
-            <div class="message-content">
-                <div class="${textMessageClass}" id="${messageId}"
-                     data-original="${this.escapeHtml(message.content)}"
-                     data-rendered="${displayContent.replace(/"/g, '&quot;')}"
-                     data-is-rendered="${hasMarkdown ? 'true' : 'false'}">
-                    ${displayContent}
-                    ${toggleButton}
-                </div>
-            </div>
-            <div class="message-meta">
-                <span>${deviceName}</span>
-                <span class="message-time">${time}</span>
-            </div>
-        `;
+        return `<div class="message-content"><div class="${textMessageClass}" id="${messageId}" data-original="${this.escapeHtml(message.content)}" data-rendered="${displayContent.replace(/"/g, '&quot;')}" data-is-rendered="${hasMarkdown ? 'true' : 'false'}">${displayContent}${toggleButton}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div>`;
     },
 
     // 渲染文本消息（保留用于兼容性）
@@ -266,23 +252,7 @@ const UI = {
             ? `<button class="markdown-toggle" onclick="UI.toggleMarkdownView('${messageId}')" title="切换源码/渲染视图">📝</button>`
             : '';
 
-        return `
-            <div class="message ${isOwn ? 'own' : 'other'} fade-in">
-                <div class="message-content">
-                    <div class="${textMessageClass}" id="${messageId}"
-                         data-original="${this.escapeHtml(message.content)}"
-                         data-rendered="${displayContent.replace(/"/g, '&quot;')}"
-                         data-is-rendered="${hasMarkdown ? 'true' : 'false'}">
-                        ${displayContent}
-                        ${toggleButton}
-                    </div>
-                </div>
-                <div class="message-meta">
-                    <span>${deviceName}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-            </div>
-        `;
+        return `<div class="message ${isOwn ? 'own' : 'other'} fade-in"><div class="message-content"><div class="${textMessageClass}" id="${messageId}" data-original="${this.escapeHtml(message.content)}" data-rendered="${displayContent.replace(/"/g, '&quot;')}" data-is-rendered="${hasMarkdown ? 'true' : 'false'}">${displayContent}${toggleButton}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div></div>`;
     },
     
     // 渲染文件消息内容
@@ -293,37 +263,10 @@ const UI = {
 
         let imagePreview = '';
         if (isImage) {
-            imagePreview = `
-                <div class="image-preview">
-                    <img src="/api/files/download/${message.r2_key}"
-                         alt="${this.escapeHtml(message.original_name)}"
-                         loading="lazy">
-                </div>
-            `;
+            imagePreview = `<div class="image-preview"><img src="/api/files/download/${message.r2_key}" alt="${this.escapeHtml(message.original_name)}" loading="lazy"></div>`;
         }
 
-        return `
-            <div class="message-content">
-                <div class="file-message">
-                    <div class="file-info">
-                        <div class="file-icon">${fileIcon}</div>
-                        <div class="file-details">
-                            <div class="file-name">${this.escapeHtml(message.original_name)}</div>
-                            <div class="file-size">${fileSize}</div>
-                        </div>
-                        <button class="download-btn"
-                                onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">
-                            ⬇️ 下载
-                        </button>
-                    </div>
-                    ${imagePreview}
-                </div>
-            </div>
-            <div class="message-meta">
-                <span>${deviceName}</span>
-                <span class="message-time">${time}</span>
-            </div>
-        `;
+        return `<div class="message-content"><div class="file-message"><div class="file-info"><div class="file-icon">${fileIcon}</div><div class="file-details"><div class="file-name">${this.escapeHtml(message.original_name)}</div><div class="file-size">${fileSize}</div></div><button class="download-btn" onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">⬇️ 下载</button></div>${imagePreview}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div>`;
     },
 
     // 渲染文件消息（保留用于兼容性）
@@ -334,39 +277,10 @@ const UI = {
 
         let imagePreview = '';
         if (isImage) {
-            imagePreview = `
-                <div class="image-preview">
-                    <img src="/api/files/download/${message.r2_key}"
-                         alt="${this.escapeHtml(message.original_name)}"
-                         loading="lazy">
-                </div>
-            `;
+            imagePreview = `<div class="image-preview"><img src="/api/files/download/${message.r2_key}" alt="${this.escapeHtml(message.original_name)}" loading="lazy"></div>`;
         }
 
-        return `
-            <div class="message ${isOwn ? 'own' : 'other'} fade-in">
-                <div class="message-content">
-                    <div class="file-message">
-                        <div class="file-info">
-                            <div class="file-icon">${fileIcon}</div>
-                            <div class="file-details">
-                                <div class="file-name">${this.escapeHtml(message.original_name)}</div>
-                                <div class="file-size">${fileSize}</div>
-                            </div>
-                            <button class="download-btn"
-                                    onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">
-                                ⬇️ 下载
-                            </button>
-                        </div>
-                        ${imagePreview}
-                    </div>
-                </div>
-                <div class="message-meta">
-                    <span>${deviceName}</span>
-                    <span class="message-time">${time}</span>
-                </div>
-            </div>
-        `;
+        return `<div class="message ${isOwn ? 'own' : 'other'} fade-in"><div class="message-content"><div class="file-message"><div class="file-info"><div class="file-icon">${fileIcon}</div><div class="file-details"><div class="file-name">${this.escapeHtml(message.original_name)}</div><div class="file-size">${fileSize}</div></div><button class="download-btn" onclick="API.downloadFile('${message.r2_key}', '${this.escapeHtml(message.original_name)}')">⬇️ 下载</button></div>${imagePreview}</div></div><div class="message-meta"><span>${deviceName}</span><span class="message-time">${time}</span></div></div>`;
     },
     
     // 添加新消息到列表（增量方式）
