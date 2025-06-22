@@ -133,8 +133,7 @@ class PWAManager {
             // 保存事件，但不阻止默认行为（让浏览器显示原生提示）
             this.deferredPrompt = e;
 
-            // 可选：显示我们的自定义安装按钮
-            this.showInstallButton();
+            // 不显示自定义安装按钮，只保存事件供/pwa命令使用
         });
         
         // 监听应用安装事件
@@ -145,56 +144,31 @@ class PWAManager {
             Utils.showNotification('应用已成功安装到桌面！', 'success');
         });
         
-        // 使用统一的网络状态管理器
-        if (typeof NetworkManager !== 'undefined') {
-            // 监听网络状态变化
-            NetworkManager.on('statusChange', (data) => {
-                this.isOnline = data.isOnline;
-                this.handleOnlineStatusChange();
-            });
-        } else {
-            // 降级处理：如果NetworkManager不可用，使用原有逻辑
-            console.warn('PWA: NetworkManager不可用，使用降级网络监听');
-
-            window.addEventListener('online', () => {
-                this.isOnline = true;
-                this.handleOnlineStatusChange();
-            });
-
-            window.addEventListener('offline', () => {
-                this.isOnline = false;
-                this.handleOnlineStatusChange();
-            });
-        }
+        // 监听网络状态变化
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            this.handleOnlineStatusChange();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            this.handleOnlineStatusChange();
+        });
     }
     
     // 处理网络状态变化
     handleOnlineStatusChange() {
-        // 不再直接操作UI，让NetworkManager统一管理
-        console.log(`PWA网络状态变化: ${this.isOnline ? '在线' : '离线'}`);
-
-        // PWA特有的处理逻辑
-        if (this.isOnline) {
-            // 网络恢复时，可以执行PWA特有的同步操作
-            this.handlePWAOnlineRestore();
-        } else {
-            // 离线时，可以执行PWA特有的离线准备
-            this.handlePWAOfflineMode();
+        const statusElement = document.querySelector('.connection-status');
+        if (statusElement) {
+            statusElement.textContent = this.isOnline ? '已连接' : '离线模式';
+            statusElement.className = `connection-status ${this.isOnline ? 'online' : 'offline'}`;
         }
-    }
 
-    // PWA网络恢复处理
-    handlePWAOnlineRestore() {
-        console.log('📱 PWA网络恢复处理');
-        // 可以在这里添加PWA特有的网络恢复逻辑
-        // 比如同步离线期间的数据等
-    }
-
-    // PWA离线模式处理
-    handlePWAOfflineMode() {
-        console.log('📱 PWA离线模式处理');
-        // 可以在这里添加PWA特有的离线准备逻辑
-        // 比如缓存重要数据等
+        // 只在网络状态真正变化时显示通知，避免重复提示
+        if (this.isOnline) {
+            Utils.showNotification('网络已连接', 'success');
+        }
+        // 离线状态的通知由UI.setConnectionStatus处理，避免重复
     }
     
     // 检查安装状态
@@ -210,35 +184,14 @@ class PWAManager {
     
     // 设置安装提示
     setupInstallPrompt() {
-        // 如果已安装，不显示安装按钮
-        if (this.isInstalled) {
-            return;
-        }
-        
-        // 延迟显示安装提示（避免打扰用户）
-        setTimeout(() => {
-            if (this.deferredPrompt && !this.isInstalled) {
-                this.showInstallBanner();
-            }
-        }, 30000); // 30秒后显示
+        // 不自动显示任何安装提示，只通过/pwa命令手动触发
+        return;
     }
     
-    // 显示安装按钮
+    // 显示安装按钮（已禁用）
     showInstallButton() {
-        let installBtn = document.getElementById('pwa-install-btn');
-        
-        if (!installBtn) {
-            installBtn = document.createElement('button');
-            installBtn.id = 'pwa-install-btn';
-            installBtn.className = 'pwa-install-button';
-            installBtn.innerHTML = '📱 安装应用';
-            installBtn.onclick = () => this.promptInstall();
-            
-            // 添加到页面右下角
-            document.body.appendChild(installBtn);
-        }
-        
-        installBtn.style.display = 'block';
+        // 不显示悬浮安装按钮
+        return;
     }
     
     // 隐藏安装按钮

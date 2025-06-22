@@ -529,11 +529,20 @@ const UI = {
 
         // 更新状态显示
         const isOnline = status === 'connected';
-        statusElement.textContent = isOnline ? '已连接' : '离线模式';
-        statusElement.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
+        const isConnecting = status === 'connecting';
 
-        // 如果是离线状态，显示提示
-        if (!isOnline) {
+        if (isConnecting) {
+            statusElement.textContent = '连接中...';
+            statusElement.className = 'connection-status connecting';
+        } else {
+            statusElement.textContent = isOnline ? '已连接' : '离线模式';
+            statusElement.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
+        }
+
+        // 只有在真正断开连接时才显示离线提示，连接中状态不显示
+        if (status === 'disconnected' && navigator.onLine) {
+            Utils.showNotification('连接已断开，正在重连...', 'warning');
+        } else if (!navigator.onLine) {
             Utils.showNotification('已切换到离线模式，部分功能可能受限', 'warning');
         }
     },
