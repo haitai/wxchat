@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接测试 - 微信文件传输助手</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #07c160;
+        }
+        
+        .test-button {
+            background: #07c160;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        
+        .test-button:hover {
+            background: #06ad56;
+        }
+        
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .result-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .indicator.online { background: #28a745; }
+        .indicator.offline { background: #dc3545; }
+        .indicator.unknown { background: #ffc107; }
+        
+        .mobile-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 网络连接测试</h1>
+            <p>移动端网络连接问题诊断工具</p>
+        </div>
+        
+        <div class="status-card">
+            <h3>📊 当前网络状态</h3>
+            <div id="networkStatus">正在检测...</div>
+        </div>
+        
+        <div class="mobile-info" id="mobileInfo" style="display: none;">
+            <h3>📱 移动端信息</h3>
+            <div id="mobileDetails"></div>
+        </div>
+        
+        <div class="status-card">
+            <h3>🔧 测试工具</h3>
+            <button class="test-button" onclick="runBasicTest()">基础连通性测试</button>
+            <button class="test-button" onclick="runMobileDiagnosis()">移动端诊断</button>
+            <button class="test-button" onclick="testEventSource()">EventSource测试</button>
+            <button class="test-button" onclick="clearResults()">清除结果</button>
+        </div>
+        
+        <div class="status-card">
+            <h3>📋 测试结果</h3>
+            <div class="result-area" id="testResults">点击上方按钮开始测试...</div>
+        </div>
+        
+        <div class="status-card">
+            <h3>🔗 快速链接</h3>
+            <a href="/" class="test-button" style="text-decoration: none; display: inline-block;">返回主应用</a>
+            <a href="/login.html" class="test-button" style="text-decoration: none; display: inline-block;">登录页面</a>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="./js/config.js"></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/networkManager.js"></script>
+    
+    <script>
+        let testResults = '';
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNetworkStatus();
+            checkMobileDevice();
+            
+            // 监听网络状态变化
+            if (typeof NetworkManager !== 'undefined') {
+                NetworkManager.on('statusChange', updateNetworkStatus);
+                NetworkManager.on('qualityChange', updateNetworkStatus);
+            }
+            
+            // 定期更新状态
+            setInterval(updateNetworkStatus, 5000);
+        });
+        
+        // 更新网络状态显示
+        function updateNetworkStatus() {
+            const statusDiv = document.getElementById('networkStatus');
+            
+            if (typeof NetworkManager !== 'undefined') {
+                const status = NetworkManager.getStatus();
+                
+                const indicator = status.isOnline ? 'online' : 'offline';
+                const statusText = status.isOnline ? '在线' : '离线';
+                const quality = status.quality || 'unknown';
+                
+                statusDiv.innerHTML = `
+                    <div><span class="indicator ${indicator}"></span><strong>连接状态:</strong> ${statusText}</div>
+                    <div style="margin-top: 8px;"><strong>网络质量:</strong> ${quality}</div>
+                    <div style="margin-top: 8px;"><strong>设备类型:</strong> ${status.isMobile ? '移动端' : '桌面端'}</div>
+                    <div style="margin-top: 8px;"><strong>PWA模式:</strong> ${status.isPWA ? '是' : '否'}</div>
+                    <div style="margin-top: 8px;"><strong>最后检测:</strong> ${new Date().toLocaleTimeString()}</div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div><span class="indicator unknown"></span><strong>NetworkManager未加载</strong></div>
+                    <div style="margin-top: 8px;">浏览器状态: ${navigator.onLine ? '在线' : '离线'}</div>
+                `;
+            }
+        }
+        
+        // 检查移动设备信息
+        function checkMobileDevice() {
+            const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                const mobileInfo = document.getElementById('mobileInfo');
+                const mobileDetails = document.getElementById('mobileDetails');
+                
+                mobileInfo.style.display = 'block';
+                
+                let details = `
+                    <div><strong>User Agent:</strong> ${navigator.userAgent}</div>
+                    <div style="margin-top: 8px;"><strong>屏幕尺寸:</strong> ${screen.width}x${screen.height}</div>
+                    <div style="margin-top: 8px;"><strong>视口尺寸:</strong> ${window.innerWidth}x${window.innerHeight}</div>
+                `;
+                
+                if (navigator.connection) {
+                    details += `
+                        <div style="margin-top: 8px;"><strong>网络类型:</strong> ${navigator.connection.effectiveType}</div>
+                        <div style="margin-top: 8px;"><strong>下行速度:</strong> ${navigator.connection.downlink} Mbps</div>
+                        <div style="margin-top: 8px;"><strong>往返时间:</strong> ${navigator.connection.rtt} ms</div>
+                    `;
+                }
+                
+                mobileDetails.innerHTML = details;
+            }
+        }
+        
+        // 基础连通性测试
+        async function runBasicTest() {
+            addResult('🔍 开始基础连通性测试...\n');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/api/messages?limit=1', {
+                    method: 'GET',
+                    cache: 'no-cache'
+                });
+                const endTime = Date.now();
+                
+                const latency = endTime - startTime;
+                
+                if (response.ok) {
+                    addResult(`✅ 基础连通性测试通过\n   延迟: ${latency}ms\n   状态: ${response.status}\n\n`);
+                } else {
+                    addResult(`❌ 基础连通性测试失败\n   状态: ${response.status}\n   延迟: ${latency}ms\n\n`);
+                }
+            } catch (error) {
+                addResult(`❌ 基础连通性测试失败\n   错误: ${error.message}\n\n`);
+            }
+        }
+        
+        // 移动端诊断
+        async function runMobileDiagnosis() {
+            if (typeof NetworkManager === 'undefined') {
+                addResult('❌ NetworkManager未加载，无法进行移动端诊断\n\n');
+                return;
+            }
+            
+            addResult('📱 开始移动端网络诊断...\n');
+            
+            try {
+                const diagnosis = await NetworkManager.diagnoseMobileNetwork();
+                
+                if (diagnosis.error) {
+                    addResult(`❌ 诊断失败: ${diagnosis.error}\n\n`);
+                    return;
+                }
+                
+                const report = NetworkManager.generateDiagnosisReport(diagnosis);
+                addResult(report + '\n\n');
+                
+            } catch (error) {
+                addResult(`❌ 移动端诊断失败: ${error.message}\n\n`);
+            }
+        }
+        
+        // EventSource测试
+        function testEventSource() {
+            addResult('🔗 开始EventSource连接测试...\n');
+            
+            if (typeof EventSource === 'undefined') {
+                addResult('❌ 浏览器不支持EventSource\n\n');
+                return;
+            }
+            
+            try {
+                const eventSource = new EventSource('/api/events?test=1');
+                let connected = false;
+                
+                const timeout = setTimeout(() => {
+                    if (!connected) {
+                        eventSource.close();
+                        addResult('⏰ EventSource连接超时\n\n');
+                    }
+                }, 10000);
+                
+                eventSource.addEventListener('connection', () => {
+                    connected = true;
+                    clearTimeout(timeout);
+                    addResult('✅ EventSource连接成功\n');
+                    
+                    setTimeout(() => {
+                        eventSource.close();
+                        addResult('🔌 EventSource连接已关闭\n\n');
+                    }, 2000);
+                });
+                
+                eventSource.onerror = (error) => {
+                    clearTimeout(timeout);
+                    addResult(`❌ EventSource连接失败\n   ReadyState: ${eventSource.readyState}\n\n`);
+                    eventSource.close();
+                };
+                
+            } catch (error) {
+                addResult(`❌ EventSource测试失败: ${error.message}\n\n`);
+            }
+        }
+        
+        // 添加测试结果
+        function addResult(text) {
+            testResults += text;
+            document.getElementById('testResults').textContent = testResults;
+            
+            // 滚动到底部
+            const resultArea = document.getElementById('testResults');
+            resultArea.scrollTop = resultArea.scrollHeight;
+        }
+        
+        // 清除结果
+        function clearResults() {
+            testResults = '';
+            document.getElementById('testResults').textContent = '点击上方按钮开始测试...';
+        }
+    </script>
+</body>
+</html>

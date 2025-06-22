@@ -145,30 +145,56 @@ class PWAManager {
             Utils.showNotification('应用已成功安装到桌面！', 'success');
         });
         
-        // 监听网络状态变化
-        window.addEventListener('online', () => {
-            this.isOnline = true;
-            this.handleOnlineStatusChange();
-        });
-        
-        window.addEventListener('offline', () => {
-            this.isOnline = false;
-            this.handleOnlineStatusChange();
-        });
+        // 使用统一的网络状态管理器
+        if (typeof NetworkManager !== 'undefined') {
+            // 监听网络状态变化
+            NetworkManager.on('statusChange', (data) => {
+                this.isOnline = data.isOnline;
+                this.handleOnlineStatusChange();
+            });
+        } else {
+            // 降级处理：如果NetworkManager不可用，使用原有逻辑
+            console.warn('PWA: NetworkManager不可用，使用降级网络监听');
+
+            window.addEventListener('online', () => {
+                this.isOnline = true;
+                this.handleOnlineStatusChange();
+            });
+
+            window.addEventListener('offline', () => {
+                this.isOnline = false;
+                this.handleOnlineStatusChange();
+            });
+        }
     }
     
     // 处理网络状态变化
     handleOnlineStatusChange() {
-        const statusElement = document.querySelector('.connection-status');
-        if (statusElement) {
-            statusElement.textContent = this.isOnline ? '已连接' : '离线模式';
-            statusElement.className = `connection-status ${this.isOnline ? 'online' : 'offline'}`;
+        // 不再直接操作UI，让NetworkManager统一管理
+        console.log(`PWA网络状态变化: ${this.isOnline ? '在线' : '离线'}`);
+
+        // PWA特有的处理逻辑
+        if (this.isOnline) {
+            // 网络恢复时，可以执行PWA特有的同步操作
+            this.handlePWAOnlineRestore();
+        } else {
+            // 离线时，可以执行PWA特有的离线准备
+            this.handlePWAOfflineMode();
         }
-        
-        // 显示网络状态通知
-        const message = this.isOnline ? '网络已连接' : '已切换到离线模式';
-        const type = this.isOnline ? 'success' : 'warning';
-        Utils.showNotification(message, type);
+    }
+
+    // PWA网络恢复处理
+    handlePWAOnlineRestore() {
+        console.log('📱 PWA网络恢复处理');
+        // 可以在这里添加PWA特有的网络恢复逻辑
+        // 比如同步离线期间的数据等
+    }
+
+    // PWA离线模式处理
+    handlePWAOfflineMode() {
+        console.log('📱 PWA离线模式处理');
+        // 可以在这里添加PWA特有的离线准备逻辑
+        // 比如缓存重要数据等
     }
     
     // 检查安装状态

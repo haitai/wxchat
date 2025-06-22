@@ -264,26 +264,96 @@ class RealtimeManager {
 // 创建全局实例
 const Realtime = new RealtimeManager();
 
-// 网络状态监听
-window.addEventListener('online', () => {
-    if (!Realtime.isConnectionAlive()) {
-        Realtime.connect();
-    }
-});
+// 使用统一的网络状态管理器
+if (typeof NetworkManager !== 'undefined') {
+    // 监听网络状态变化
+    NetworkManager.on('statusChange', (data) => {
+        if (data.isOnline && !Realtime.isConnectionAlive()) {
+            console.log('网络恢复，重新建立实时连接');
+            setTimeout(() => {
+                Realtime.connect();
+            }, 1000); // 延迟1秒确保网络稳定
+        } else if (!data.isOnline) {
+            console.log('网络断开，停止实时连接');
+            Realtime.disconnect();
+        }
+    });
 
-window.addEventListener('offline', () => {
-    UI.setConnectionStatus('offline');
-});
+    // 监听页面可见性变化
+    NetworkManager.on('visibilityChange', (data) => {
+        if (data.visible && !Realtime.isConnectionAlive()) {
+            console.log('页面可见，检查实时连接状态');
+            setTimeout(() => {
+                if (NetworkManager.getStatus().isOnline) {
+                    Realtime.connect();
+                }
+            }, 500);
+        }
+    });
 
-// 页面可见性变化监听
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        // 页面变为可见时，检查连接状态
+    // 监听网络质量变化
+    NetworkManager.on('qualityChange', (data) => {
+        if (data.quality === 'poor' && Realtime.isConnected) {
+            console.log('网络质量差，考虑切换到长轮询');
+
+            // 移动端网络质量差时，主动切换到长轮询
+            if (data.isMobile) {
+                console.log('📱 移动端网络质量差，切换到长轮询模式');
+                Realtime.fallbackToLongPolling();
+            }
+        } else if (data.quality === 'good' && !Realtime.isConnected) {
+            console.log('网络质量恢复，尝试重新建立SSE连接');
+
+            // 网络质量恢复时，尝试重新建立SSE连接
+            setTimeout(() => {
+                if (!Realtime.isConnected) {
+                    Realtime.connect();
+                }
+            }, 1000);
+        }
+    });
+
+    // 监听移动端重连就绪事件
+    NetworkManager.on('mobileReconnectionReady', (data) => {
+        console.log('📱 移动端网络重连就绪');
+
+        if (!Realtime.isConnected && data.quality === 'good') {
+            console.log('📱 网络质量良好，重新建立实时连接');
+            Realtime.connect();
+        }
+    });
+
+    // 监听移动端重连完成事件
+    NetworkManager.on('mobileReconnectionComplete', (data) => {
+        console.log('📱 移动端网络重连完成:', data);
+
+        if (!data.stable && Realtime.isConnected) {
+            console.log('📱 网络不稳定，切换到长轮询');
+            Realtime.fallbackToLongPolling();
+        }
+    });
+} else {
+    // 降级处理：如果NetworkManager不可用，使用原有逻辑
+    console.warn('NetworkManager不可用，使用降级网络监听');
+
+    window.addEventListener('online', () => {
         if (!Realtime.isConnectionAlive()) {
             Realtime.connect();
         }
-    }
-});
+    });
+
+    window.addEventListener('offline', () => {
+        UI.setConnectionStatus('offline');
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            if (!Realtime.isConnectionAlive()) {
+                Realtime.connect();
+            }
+        }
+    });
+}
 
 // 导出到全局
 window.Realtime = Realtime;

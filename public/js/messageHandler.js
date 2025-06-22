@@ -161,6 +161,12 @@ const MessageHandler = {
             return;
         }
 
+        // 检查是否为网络诊断指令
+        if (this.isNetworkDiagnosisCommand(content)) {
+            await this.handleNetworkDiagnosisCommand();
+            return;
+        }
+
         try {
             UI.setSendButtonState(true, true);
             UI.setConnectionStatus('connecting');
@@ -205,6 +211,12 @@ const MessageHandler = {
     isPWACommand(content) {
         const trimmedContent = content.trim().toLowerCase();
         return CONFIG.PWA.TRIGGER_COMMANDS.includes(trimmedContent);
+    },
+
+    // 检查是否为网络诊断指令
+    isNetworkDiagnosisCommand(content) {
+        const diagnosisCommands = ['/网络诊断', '/network', '/诊断', '/debug-network', '/网络检测'];
+        return diagnosisCommands.includes(content.trim());
     },
 
     // 处理清理指令
@@ -355,7 +367,71 @@ const MessageHandler = {
             UI.showError('PWA功能检查失败，请重试');
         }
     },
-    
+
+    // 处理网络诊断指令
+    async handleNetworkDiagnosisCommand() {
+        try {
+            UI.clearInput();
+            UI.showSuccess('🔍 正在进行网络诊断，请稍候...');
+
+            if (typeof NetworkManager === 'undefined') {
+                UI.showError('网络管理器未加载，无法进行诊断');
+                return;
+            }
+
+            // 执行网络诊断
+            const diagnosis = await NetworkManager.diagnoseMobileNetwork();
+
+            if (diagnosis.error) {
+                UI.showError(diagnosis.error);
+                return;
+            }
+
+            // 生成诊断报告
+            const report = NetworkManager.generateDiagnosisReport(diagnosis);
+
+            // 显示诊断结果
+            UI.showSuccess(report);
+
+            // 如果是移动端且有网络问题，提供建议
+            if (diagnosis.device.isMobile) {
+                const hasNetworkIssues = diagnosis.tests.some(test => !test.success);
+
+                if (hasNetworkIssues) {
+                    setTimeout(() => {
+                        const suggestions = `
+🔧 移动端网络问题建议：
+
+📱 基础检查：
+• 确保WiFi或移动数据连接正常
+• 尝试切换网络（WiFi ↔ 移动数据）
+• 检查是否开启了省电模式
+
+🌐 浏览器设置：
+• 清除浏览器缓存和数据
+• 关闭广告拦截器
+• 允许网站使用后台刷新
+
+📲 PWA模式：
+• 如果使用PWA，尝试重新安装
+• 检查是否允许通知权限
+
+🔄 如果问题持续：
+• 重启浏览器或设备
+• 输入 /网络诊断 重新检测
+                        `.trim();
+
+                        UI.showSuccess(suggestions);
+                    }, 2000);
+                }
+            }
+
+        } catch (error) {
+            console.error('网络诊断失败:', error);
+            UI.showError('网络诊断失败，请稍后重试');
+        }
+    },
+
     // 设备同步
     async syncDevice() {
         try {
@@ -448,19 +524,50 @@ const MessageHandler = {
     }
 };
 
-// 监听页面可见性变化
-document.addEventListener('visibilitychange', () => {
-    MessageHandler.handleVisibilityChange();
-});
+// 使用统一的网络状态管理器
+if (typeof NetworkManager !== 'undefined') {
+    // 监听网络状态变化
+    NetworkManager.on('statusChange', (data) => {
+        console.log('MessageHandler收到网络状态变化:', data);
 
-// 监听网络状态变化
-window.addEventListener('online', () => {
-    MessageHandler.handleOnlineStatusChange();
-});
+        if (data.isOnline) {
+            // 网络恢复时的处理
+            MessageHandler.restartAutoRefresh();
+            MessageHandler.loadMessages(false); // 不强制滚动
+        } else {
+            // 网络断开时的处理
+            MessageHandler.stopAutoRefresh();
+            UI.showError('网络连接已断开');
+        }
+    });
 
-window.addEventListener('offline', () => {
-    MessageHandler.handleOnlineStatusChange();
-});
+    // 监听页面可见性变化
+    NetworkManager.on('visibilityChange', (data) => {
+        if (data.visible) {
+            // 页面显示时重启自动刷新并立即刷新一次
+            MessageHandler.startAutoRefresh();
+            MessageHandler.loadMessages(false);
+        } else {
+            // 页面隐藏时停止自动刷新
+            MessageHandler.stopAutoRefresh();
+        }
+    });
+} else {
+    // 降级处理：如果NetworkManager不可用，使用原有逻辑
+    console.warn('NetworkManager不可用，使用降级事件监听');
+
+    document.addEventListener('visibilitychange', () => {
+        MessageHandler.handleVisibilityChange();
+    });
+
+    window.addEventListener('online', () => {
+        MessageHandler.handleOnlineStatusChange();
+    });
+
+    window.addEventListener('offline', () => {
+        MessageHandler.handleOnlineStatusChange();
+    });
+}
 
 // 页面卸载时清理定时器
 window.addEventListener('beforeunload', () => {

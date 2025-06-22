@@ -32,6 +32,16 @@ class WeChatApp {
             // 请求通知权限
             await Utils.requestNotificationPermission();
 
+            // 首先初始化网络管理器（必须在其他模块之前）
+            if (typeof NetworkManager !== 'undefined') {
+                console.log('🌐 使用统一网络状态管理器');
+                // NetworkManager已经在构造函数中自动初始化
+            } else {
+                console.warn('⚠️ NetworkManager未加载，使用降级网络处理');
+                // 设置初始连接状态（降级处理）
+                UI.setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
+            }
+
             // 初始化各个模块
             UI.init();
             FileUpload.init();
@@ -40,9 +50,6 @@ class WeChatApp {
             if (typeof PWA !== 'undefined') {
                 PWA.init();
             }
-
-            // 设置初始连接状态
-            UI.setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
 
             MessageHandler.init();
 
