@@ -60,23 +60,99 @@ const Utils = {
         });
     },
     
-    // 获取文件图标
-    getFileIcon(mimeType) {
-        if (!mimeType) return CONFIG.FILE_ICONS.default;
-        
-        // 检查具体的MIME类型
-        if (CONFIG.FILE_ICONS[mimeType]) {
-            return CONFIG.FILE_ICONS[mimeType];
-        }
-        
-        // 检查MIME类型前缀
-        for (const [prefix, icon] of Object.entries(CONFIG.FILE_ICONS)) {
-            if (mimeType.startsWith(prefix)) {
-                return icon;
+    // 获取文件图标 - 支持MIME类型和文件扩展名
+    getFileIcon(mimeType, fileName = null) {
+        // 优先使用MIME类型检测
+        if (mimeType) {
+            // 检查具体的MIME类型
+            if (CONFIG.FILE_ICONS[mimeType]) {
+                return CONFIG.FILE_ICONS[mimeType];
+            }
+
+            // 检查MIME类型前缀
+            for (const [prefix, icon] of Object.entries(CONFIG.FILE_ICONS)) {
+                if (prefix !== 'default' && mimeType.startsWith(prefix)) {
+                    return icon;
+                }
             }
         }
-        
+
+        // 如果MIME类型检测失败，使用文件扩展名
+        if (fileName) {
+            const extension = this.getFileExtension(fileName);
+            if (extension && CONFIG.FILE_EXTENSION_ICONS[extension]) {
+                return CONFIG.FILE_EXTENSION_ICONS[extension];
+            }
+        }
+
         return CONFIG.FILE_ICONS.default;
+    },
+
+    // 获取文件扩展名
+    getFileExtension(fileName) {
+        if (!fileName || typeof fileName !== 'string') return null;
+        const lastDot = fileName.lastIndexOf('.');
+        if (lastDot === -1 || lastDot === fileName.length - 1) return null;
+        return fileName.substring(lastDot + 1).toLowerCase();
+    },
+
+    // 通过文件名获取图标（用于文件选择前的预览）
+    getFileIconByName(fileName) {
+        return this.getFileIcon(null, fileName);
+    },
+
+    // 获取文件类型的友好名称
+    getFileTypeName(mimeType, fileName) {
+        if (mimeType) {
+            if (mimeType.startsWith('image/')) return '图片';
+            if (mimeType.startsWith('video/')) return '视频';
+            if (mimeType.startsWith('audio/')) return '音频';
+            if (mimeType.includes('pdf')) return 'PDF文档';
+            if (mimeType.includes('word') || mimeType.includes('document')) return 'Word文档';
+            if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'Excel表格';
+            if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'PowerPoint演示';
+            if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('compressed')) return '压缩文件';
+            if (mimeType.startsWith('text/')) return '文本文件';
+        }
+
+        if (fileName) {
+            const ext = this.getFileExtension(fileName);
+            if (ext) {
+                const extMap = {
+                    'jpg': '图片', 'jpeg': '图片', 'png': '图片', 'gif': '动图', 'bmp': '图片', 'svg': '矢量图', 'webp': '图片',
+                    'mp4': '视频', 'avi': '视频', 'mov': '视频', 'wmv': '视频', 'mkv': '视频', 'flv': '视频',
+                    'mp3': '音频', 'wav': '音频', 'aac': '音频', 'flac': '音频', 'ogg': '音频',
+                    'pdf': 'PDF文档', 'doc': 'Word文档', 'docx': 'Word文档',
+                    'xls': 'Excel表格', 'xlsx': 'Excel表格',
+                    'ppt': 'PowerPoint演示', 'pptx': 'PowerPoint演示',
+                    'zip': '压缩文件', 'rar': '压缩文件', '7z': '压缩文件', 'tar': '压缩文件',
+                    'txt': '文本文件', 'md': 'Markdown文档', 'html': 'HTML文档', 'css': 'CSS样式', 'js': 'JavaScript代码',
+                    'py': 'Python代码', 'java': 'Java代码', 'cpp': 'C++代码', 'c': 'C代码'
+                };
+                return extMap[ext] || '文件';
+            }
+        }
+
+        return '文件';
+    },
+
+    // 批量获取文件信息（用于拖拽预览）
+    getFilesInfo(files) {
+        const filesArray = Array.from(files);
+        const info = {
+            count: filesArray.length,
+            icons: [],
+            types: new Set(),
+            totalSize: 0
+        };
+
+        filesArray.forEach(file => {
+            info.icons.push(this.getFileIcon(file.type, file.name));
+            info.types.add(this.getFileTypeName(file.type, file.name));
+            info.totalSize += file.size;
+        });
+
+        return info;
     },
     
     // 检查是否为图片文件

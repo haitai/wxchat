@@ -257,7 +257,7 @@ const UI = {
     
     // 渲染文件消息内容
     renderFileMessageContent(message, deviceName, time) {
-        const fileIcon = Utils.getFileIcon(message.mime_type);
+        const fileIcon = Utils.getFileIcon(message.mime_type, message.original_name);
         const fileSize = Utils.formatFileSize(message.file_size);
         const isImage = Utils.isImageFile(message.mime_type);
 
@@ -271,7 +271,7 @@ const UI = {
 
     // 渲染文件消息（保留用于兼容性）
     renderFileMessage(message, isOwn, deviceName, time) {
-        const fileIcon = Utils.getFileIcon(message.mime_type);
+        const fileIcon = Utils.getFileIcon(message.mime_type, message.original_name);
         const fileSize = Utils.formatFileSize(message.file_size);
         const isImage = Utils.isImageFile(message.mime_type);
 

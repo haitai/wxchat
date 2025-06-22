@@ -80,7 +80,7 @@ const FileUpload = {
 
         if (e.dataTransfer.types.includes('Files')) {
             this.showDragOverlay();
-            this.updateDragOverlayContent(e.dataTransfer.items.length);
+            this.updateDragOverlayContent(e.dataTransfer.items);
         }
     },
 
@@ -174,21 +174,100 @@ const FileUpload = {
         }
     },
 
-    // 更新拖拽覆盖层内容
-    updateDragOverlayContent(fileCount) {
+    // 更新拖拽覆盖层内容 - 支持文件类型图标显示
+    updateDragOverlayContent(dataTransferItems) {
         const overlay = document.getElementById('dragOverlay');
-        if (overlay) {
-            const dragText = overlay.querySelector('.drag-text');
-            const dragHint = overlay.querySelector('.drag-hint');
+        if (!overlay) return;
 
-            if (fileCount > 1) {
-                dragText.textContent = `拖拽 ${fileCount} 个文件到此处上传`;
-                dragHint.textContent = '支持批量上传';
-            } else {
-                dragText.textContent = '拖拽文件到此处上传';
-                dragHint.textContent = '支持多文件同时上传';
+        const dragIcon = overlay.querySelector('.drag-icon');
+        const dragText = overlay.querySelector('.drag-text');
+        const dragHint = overlay.querySelector('.drag-hint');
+
+        if (!dataTransferItems || dataTransferItems.length === 0) {
+            dragIcon.textContent = '📁';
+            dragText.textContent = '拖拽文件到此处上传';
+            dragHint.textContent = '支持多文件同时上传';
+            return;
+        }
+
+        const fileCount = dataTransferItems.length;
+
+        // 获取文件信息并显示相应图标
+        const fileIcons = [];
+        const fileTypes = new Set();
+
+        for (let i = 0; i < Math.min(dataTransferItems.length, 3); i++) {
+            const item = dataTransferItems[i];
+            if (item.kind === 'file') {
+                // 尝试从MIME类型获取图标
+                let icon = Utils.getFileIcon(item.type);
+
+                // 如果没有MIME类型，尝试从文件名获取
+                if (icon === CONFIG.FILE_ICONS.default && item.getAsFile) {
+                    const file = item.getAsFile();
+                    if (file && file.name) {
+                        icon = Utils.getFileIconByName(file.name);
+                    }
+                }
+
+                fileIcons.push(icon);
+                fileTypes.add(this.getFileTypeCategory(item.type, item.getAsFile?.()?.name));
             }
         }
+
+        // 显示图标
+        if (fileIcons.length === 1) {
+            dragIcon.textContent = fileIcons[0];
+        } else if (fileIcons.length > 1) {
+            // 多文件时显示前几个图标
+            dragIcon.innerHTML = fileIcons.slice(0, 3).join(' ');
+        } else {
+            dragIcon.textContent = '📁';
+        }
+
+        // 更新文本
+        if (fileCount > 1) {
+            const typeText = fileTypes.size === 1 ?
+                Array.from(fileTypes)[0] : '多种类型';
+            dragText.textContent = `拖拽 ${fileCount} 个${typeText}文件到此处上传`;
+            dragHint.textContent = '支持批量上传';
+        } else {
+            const typeText = fileTypes.size > 0 ? Array.from(fileTypes)[0] : '';
+            dragText.textContent = `拖拽${typeText}文件到此处上传`;
+            dragHint.textContent = '支持多文件同时上传';
+        }
+    },
+
+    // 获取文件类型分类（用于显示友好的类型名称）
+    getFileTypeCategory(mimeType, fileName) {
+        if (mimeType) {
+            if (mimeType.startsWith('image/')) return '图片';
+            if (mimeType.startsWith('video/')) return '视频';
+            if (mimeType.startsWith('audio/')) return '音频';
+            if (mimeType.includes('pdf')) return 'PDF';
+            if (mimeType.includes('word') || mimeType.includes('document')) return '文档';
+            if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '表格';
+            if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '演示';
+            if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('compressed')) return '压缩';
+            if (mimeType.startsWith('text/')) return '文本';
+        }
+
+        if (fileName) {
+            const ext = Utils.getFileExtension(fileName);
+            if (ext) {
+                if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(ext)) return '图片';
+                if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv'].includes(ext)) return '视频';
+                if (['mp3', 'wav', 'aac', 'flac', 'ogg'].includes(ext)) return '音频';
+                if (['pdf'].includes(ext)) return 'PDF';
+                if (['doc', 'docx'].includes(ext)) return '文档';
+                if (['xls', 'xlsx'].includes(ext)) return '表格';
+                if (['ppt', 'pptx'].includes(ext)) return '演示';
+                if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '压缩';
+                if (['txt', 'md', 'html', 'css', 'js', 'json'].includes(ext)) return '文本';
+            }
+        }
+
+        return '';
     },
 
     // 显示放下动画
@@ -351,14 +430,18 @@ const FileUpload = {
         }
     },
 
-    // 更新批量上传进度
+    // 更新批量上传进度 - 显示文件图标
     updateBatchProgress(fileName, current, total) {
         const currentElement = document.getElementById('uploadCurrent');
         if (currentElement) {
+            // 获取文件图标
+            const fileIcon = Utils.getFileIconByName(fileName);
+
             // 截断长文件名
             const displayName = fileName.length > 30 ?
                 fileName.substring(0, 27) + '...' : fileName;
-            currentElement.textContent = `正在上传: ${displayName} (${current}/${total})`;
+
+            currentElement.innerHTML = `正在上传: ${fileIcon} ${displayName} (${current}/${total})`;
         }
     },
 
@@ -449,6 +532,12 @@ const uploadStyles = `
         font-size: 4rem;
         margin-bottom: 1rem;
         animation: bounce 1s infinite;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .drag-text {

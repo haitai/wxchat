@@ -42,23 +42,130 @@ const CONFIG = {
         FILE: 'file'
     },
     
-    // 文件类型图标映射
+    // 文件类型图标映射 - 完整版
     FILE_ICONS: {
+        // 图片文件
         'image/': '🖼️',
+        'image/jpeg': '🖼️',
+        'image/jpg': '🖼️',
+        'image/png': '🖼️',
+        'image/gif': '🎞️',
+        'image/bmp': '🖼️',
+        'image/svg+xml': '🎨',
+        'image/webp': '🖼️',
+        'image/tiff': '🖼️',
+        'image/ico': '🖼️',
+
+        // 视频文件
         'video/': '🎥',
+        'video/mp4': '🎥',
+        'video/avi': '🎥',
+        'video/mov': '🎥',
+        'video/wmv': '🎥',
+        'video/mkv': '🎥',
+        'video/flv': '🎥',
+        'video/webm': '🎥',
+        'video/m4v': '🎥',
+
+        // 音频文件
         'audio/': '🎵',
-        'application/pdf': '📄',
-        'application/msword': '📝',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📝',
-        'application/vnd.ms-excel': '📊',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📊',
-        'application/vnd.ms-powerpoint': '📈',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📈',
+        'audio/mp3': '🎵',
+        'audio/wav': '🎵',
+        'audio/aac': '🎵',
+        'audio/flac': '🎵',
+        'audio/ogg': '🎵',
+        'audio/m4a': '🎵',
+        'audio/wma': '🎵',
+
+        // 文档文件
+        'application/pdf': '📕',
+        'application/msword': '📘',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📘',
+        'application/vnd.ms-excel': '📗',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📗',
+        'application/vnd.ms-powerpoint': '📙',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📙',
+        'application/rtf': '📄',
+
+        // 压缩文件
         'application/zip': '📦',
         'application/x-rar-compressed': '📦',
         'application/x-7z-compressed': '📦',
+        'application/x-tar': '📦',
+        'application/gzip': '📦',
+        'application/x-bzip2': '📦',
+
+        // 文本文件
         'text/': '📄',
+        'text/plain': '📄',
+        'text/html': '🌐',
+        'text/css': '🎨',
+        'text/javascript': '⚡',
+        'text/xml': '📋',
+        'text/csv': '📊',
+        'text/markdown': '📝',
+
+        // 代码文件
+        'application/javascript': '⚡',
+        'application/json': '📋',
+        'application/xml': '📋',
+
+        // 其他常见格式
+        'application/octet-stream': '📄',
+        'application/x-executable': '⚙️',
+        'application/x-msi': '💿',
+        'application/x-deb': '📦',
+        'application/x-rpm': '📦',
+
+        // 默认图标
         'default': '📄'
+    },
+
+    // 文件扩展名图标映射 - 用于无MIME类型时的备用检测
+    FILE_EXTENSION_ICONS: {
+        // 图片
+        'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🎞️', 'bmp': '🖼️',
+        'svg': '🎨', 'webp': '🖼️', 'tiff': '🖼️', 'tif': '🖼️', 'ico': '🖼️',
+
+        // 视频
+        'mp4': '🎥', 'avi': '🎥', 'mov': '🎥', 'wmv': '🎥', 'mkv': '🎥',
+        'flv': '🎥', 'webm': '🎥', 'm4v': '🎥', 'mpg': '🎥', 'mpeg': '🎥',
+
+        // 音频
+        'mp3': '🎵', 'wav': '🎵', 'aac': '🎵', 'flac': '🎵', 'ogg': '🎵',
+        'm4a': '🎵', 'wma': '🎵', 'opus': '🎵',
+
+        // 文档
+        'pdf': '📕', 'doc': '📘', 'docx': '📘', 'xls': '📗', 'xlsx': '📗',
+        'ppt': '📙', 'pptx': '📙', 'rtf': '📄', 'odt': '📘', 'ods': '📗', 'odp': '📙',
+
+        // 压缩
+        'zip': '📦', 'rar': '📦', '7z': '📦', 'tar': '📦', 'gz': '📦',
+        'bz2': '📦', 'xz': '📦', 'dmg': '💿', 'iso': '💿',
+
+        // 文本和代码
+        'txt': '📄', 'md': '📝', 'html': '🌐', 'htm': '🌐', 'css': '🎨',
+        'js': '⚡', 'ts': '⚡', 'jsx': '⚡', 'tsx': '⚡', 'json': '📋',
+        'xml': '📋', 'csv': '📊', 'sql': '🗃️',
+
+        // 编程语言
+        'py': '🐍', 'java': '☕', 'cpp': '⚙️', 'c': '⚙️', 'h': '⚙️',
+        'php': '🐘', 'rb': '💎', 'go': '🐹', 'rs': '🦀', 'swift': '🦉',
+        'kt': '🎯', 'scala': '📐', 'r': '📊', 'matlab': '📊', 'm': '📊',
+
+        // 配置文件
+        'ini': '⚙️', 'cfg': '⚙️', 'conf': '⚙️', 'yaml': '⚙️', 'yml': '⚙️',
+        'toml': '⚙️', 'env': '⚙️',
+
+        // 可执行文件
+        'exe': '⚙️', 'msi': '💿', 'deb': '📦', 'rpm': '📦', 'dmg': '💿',
+        'app': '📱', 'apk': '📱',
+
+        // 字体文件
+        'ttf': '🔤', 'otf': '🔤', 'woff': '🔤', 'woff2': '🔤', 'eot': '🔤',
+
+        // 其他
+        'log': '📜', 'bak': '💾', 'tmp': '🗂️', 'cache': '🗂️'
     },
     
     // 清理功能配置
@@ -98,6 +205,7 @@ Object.freeze(CONFIG.UI);
 Object.freeze(CONFIG.DEVICE);
 Object.freeze(CONFIG.MESSAGE_TYPES);
 Object.freeze(CONFIG.FILE_ICONS);
+Object.freeze(CONFIG.FILE_EXTENSION_ICONS);
 Object.freeze(CONFIG.CLEAR);
 Object.freeze(CONFIG.ERRORS);
 Object.freeze(CONFIG.SUCCESS);
