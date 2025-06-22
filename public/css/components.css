@@ -293,11 +293,13 @@
 .file-icon {
     font-size: 2rem;
     flex-shrink: 0;
-    background: linear-gradient(135deg, #07c160, #00d4aa);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 2px 4px rgba(7, 193, 96, 0.3));
+    /* 移除渐变背景，让emoji图标显示原始颜色 */
+    color: inherit;
+    /* 保留阴影效果但调整颜色 */
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    /* 确保emoji图标正常显示 */
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    line-height: 1;
 }
 
 .file-details {
