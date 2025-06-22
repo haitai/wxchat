@@ -11,7 +11,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "wxchat"
-database_id = "b58dde57-d777-459f-a6b3-ae4de9c16368"
+database_id = "a6095a1b-887b-47d2-965b-1c3174b10f19"
 
 # R2 存储桶绑定
 [[r2_buckets]]
