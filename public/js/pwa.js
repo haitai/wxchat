@@ -141,7 +141,8 @@ class PWAManager {
             console.log('🎉 应用已安装');
             this.isInstalled = true;
             this.hideInstallButton();
-            Utils.showNotification('应用已成功安装到桌面！', 'success');
+            // 安装成功通知已禁用，避免移动端弹窗遮挡输入框
+            // Utils.showNotification('应用已成功安装到桌面！', 'success');
         });
         
         // 监听网络状态变化
@@ -164,10 +165,10 @@ class PWAManager {
             statusElement.className = `connection-status ${this.isOnline ? 'online' : 'offline'}`;
         }
 
-        // 只在网络状态真正变化时显示通知，避免重复提示
-        if (this.isOnline) {
-            Utils.showNotification('网络已连接', 'success');
-        }
+        // 网络状态通知已禁用，避免移动端弹窗遮挡输入框
+        // if (this.isOnline) {
+        //     Utils.showNotification('网络已连接', 'success');
+        // }
         // 离线状态的通知由UI.setConnectionStatus处理，避免重复
     }
     
@@ -231,31 +232,33 @@ class PWAManager {
     // 提示安装
     async promptInstall() {
         if (!this.deferredPrompt) {
-            Utils.showNotification('安装提示不可用，请使用浏览器菜单安装', 'warning');
+            // 安装提示通知已禁用，避免移动端弹窗遮挡输入框
+            console.log('安装提示不可用，请使用浏览器菜单安装');
             return;
         }
-        
+
         try {
             // 显示安装提示
             this.deferredPrompt.prompt();
-            
+
             // 等待用户响应
             const { outcome } = await this.deferredPrompt.userChoice;
-            
+
             if (outcome === 'accepted') {
                 console.log('✅ 用户接受安装');
             } else {
                 console.log('❌ 用户拒绝安装');
             }
-            
+
             // 清除提示
             this.deferredPrompt = null;
             this.hideInstallButton();
             this.dismissInstallBanner();
-            
+
         } catch (error) {
             console.error('安装提示失败:', error);
-            Utils.showNotification('安装失败，请重试', 'error');
+            // 安装失败通知已禁用，避免移动端弹窗遮挡输入框
+            console.error('安装失败，请重试');
         }
     }
     
@@ -303,19 +306,21 @@ class PWAManager {
     // 清理缓存
     async clearCache() {
         if (!('caches' in window)) {
-            Utils.showNotification('浏览器不支持缓存API', 'error');
+            // 缓存API不支持通知已禁用，避免移动端弹窗遮挡输入框
+            console.error('浏览器不支持缓存API');
             return;
         }
-        
+
         try {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
-            
-            Utils.showNotification('缓存已清理', 'success');
+
+            // 缓存清理成功通知已禁用，避免移动端弹窗遮挡输入框
             console.log('🗑️ PWA缓存已清理');
         } catch (error) {
             console.error('清理缓存失败:', error);
-            Utils.showNotification('清理缓存失败', 'error');
+            // 缓存清理失败通知已禁用，避免移动端弹窗遮挡输入框
+            console.error('清理缓存失败');
         }
     }
     

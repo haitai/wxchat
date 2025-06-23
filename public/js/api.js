@@ -212,9 +212,9 @@ const API = {
         } catch (error) {
             console.error('文件下载失败:', error);
 
-            // 显示用户友好的错误信息
+            // 下载失败通知已禁用，避免移动端弹窗遮挡输入框
             if (error.message.includes('401')) {
-                Utils.showNotification('下载失败：请重新登录', 'error');
+                console.error('下载失败：请重新登录');
                 // 可以选择自动跳转到登录页
                 if (typeof Auth !== 'undefined' && Auth.logout) {
                     setTimeout(() => {
@@ -223,7 +223,7 @@ const API = {
                     }, 2000);
                 }
             } else {
-                Utils.showNotification(`下载失败：${error.message}`, 'error');
+                console.error(`下载失败：${error.message}`);
             }
 
             return false;
@@ -313,6 +313,86 @@ const API = {
             console.error('设备同步失败:', error);
             // 设备同步失败不应该阻止应用运行
             return false;
+        }
+    },
+
+    // 搜索消息
+    async searchMessages(query, type = 'all', startDate = null, endDate = null, limit = 20, offset = 0) {
+        try {
+            const params = {
+                q: query,
+                type: type,
+                limit: limit,
+                offset: offset
+            };
+
+            if (startDate) {
+                params.startDate = startDate;
+            }
+            if (endDate) {
+                params.endDate = endDate;
+            }
+
+            const response = await this.get('/api/search', params);
+
+            if (response && response.success) {
+                return {
+                    data: response.data || [],
+                    total: response.total || 0,
+                    hasMore: response.hasMore || false
+                };
+            } else {
+                throw new Error(response?.error || '搜索失败');
+            }
+        } catch (error) {
+            console.error('搜索消息失败:', error);
+            throw error;
+        }
+    },
+
+    // 获取文件分类
+    async getFileCategories(category = 'all', limit = 20, offset = 0) {
+        try {
+            const params = {
+                category: category,
+                limit: limit,
+                offset: offset
+            };
+
+            const response = await this.get('/api/files/categories', params);
+
+            if (response && response.success) {
+                return {
+                    data: response.data || [],
+                    total: response.total || 0,
+                    hasMore: response.hasMore || false,
+                    stats: response.stats || null
+                };
+            } else {
+                throw new Error(response?.error || '获取文件分类失败');
+            }
+        } catch (error) {
+            console.error('获取文件分类失败:', error);
+            throw error;
+        }
+    },
+
+    // 批量删除消息
+    async batchDeleteMessages(messageIds, confirmCode) {
+        try {
+            const response = await this.post('/api/messages/batch-delete', {
+                messageIds: messageIds,
+                confirmCode: confirmCode
+            });
+
+            if (response && response.success) {
+                return response;
+            } else {
+                throw new Error(response?.error || '批量删除失败');
+            }
+        } catch (error) {
+            console.error('批量删除消息失败:', error);
+            throw error;
         }
     },
 

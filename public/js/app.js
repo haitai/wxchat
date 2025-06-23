@@ -29,12 +29,41 @@ class WeChatApp {
             // 初始化设备ID
             this.deviceId = Utils.getDeviceId();
 
-            // 请求通知权限
-            await Utils.requestNotificationPermission();
+            // 请求通知权限 - 已禁用，避免移动端弹窗遮挡输入框
+            // await Utils.requestNotificationPermission();
 
             // 初始化各个模块
             UI.init();
             FileUpload.init();
+
+            // 初始化搜索功能
+            if (typeof Search !== 'undefined') {
+                Search.init();
+                this.bindSearchEvents();
+            }
+
+            // 初始化文件管理器
+            if (typeof FileManager !== 'undefined') {
+                FileManager.init();
+                this.bindFileManagerEvents();
+            }
+
+            // 初始化批量操作
+            if (typeof BatchOperations !== 'undefined') {
+                BatchOperations.init();
+                this.bindBatchOperationsEvents();
+            }
+
+            // 初始化主题管理器
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.init();
+            }
+
+            // 初始化导出管理器
+            if (typeof ExportManager !== 'undefined') {
+                ExportManager.init();
+                this.bindExportEvents();
+            }
 
             // 初始化PWA功能
             if (typeof PWA !== 'undefined') {
@@ -136,16 +165,17 @@ class WeChatApp {
         // 浏览器兼容性检查通过
     }
 
-    // 显示欢迎消息
+    // 显示欢迎消息 - 已禁用，避免移动端弹窗遮挡输入框
     showWelcomeMessage() {
         const isFirstTime = !localStorage.getItem('hasVisited');
-        
+
         if (isFirstTime) {
             localStorage.setItem('hasVisited', 'true');
-            
-            setTimeout(() => {
-                Utils.showNotification('欢迎使用微信文件传输助手！', 'info');
-            }, 1000);
+
+            // 欢迎通知已禁用，避免遮挡输入框
+            // setTimeout(() => {
+            //     Utils.showNotification('欢迎使用微信文件传输助手！', 'info');
+            // }, 1000);
         }
     }
 
@@ -190,6 +220,100 @@ class WeChatApp {
 
 
 
+    // 绑定搜索相关事件
+    bindSearchEvents() {
+        // 搜索按钮点击事件
+        const searchButton = document.getElementById('searchToggleButton');
+        if (searchButton) {
+            searchButton.addEventListener('click', () => {
+                if (Search.isSearchMode) {
+                    Search.closeSearch();
+                } else {
+                    // 关闭其他模式
+                    if (FileManager && FileManager.isFileManagerMode) {
+                        FileManager.closeFileManager();
+                    }
+                    Search.showSearch();
+                }
+            });
+        }
+    }
+
+    // 绑定文件管理器相关事件
+    bindFileManagerEvents() {
+        // 文件管理器按钮点击事件
+        const fileManagerButton = document.getElementById('fileManagerToggleButton');
+        if (fileManagerButton) {
+            fileManagerButton.addEventListener('click', () => {
+                if (FileManager.isFileManagerMode) {
+                    FileManager.closeFileManager();
+                } else {
+                    // 关闭其他模式
+                    if (Search && Search.isSearchMode) {
+                        Search.closeSearch();
+                    }
+                    if (BatchOperations && BatchOperations.isSelectionMode) {
+                        BatchOperations.exitSelectionMode();
+                    }
+                    if (ExportManager && ExportManager.isExportMode) {
+                        ExportManager.closeExport();
+                    }
+                    FileManager.showFileManager();
+                }
+            });
+        }
+    }
+
+    // 绑定批量操作相关事件
+    bindBatchOperationsEvents() {
+        // 批量操作按钮点击事件
+        const batchButton = document.getElementById('batchOperationsToggleButton');
+        if (batchButton) {
+            batchButton.addEventListener('click', () => {
+                if (BatchOperations.isSelectionMode) {
+                    BatchOperations.exitSelectionMode();
+                } else {
+                    // 关闭其他模式
+                    if (Search && Search.isSearchMode) {
+                        Search.closeSearch();
+                    }
+                    if (FileManager && FileManager.isFileManagerMode) {
+                        FileManager.closeFileManager();
+                    }
+                    if (ExportManager && ExportManager.isExportMode) {
+                        ExportManager.closeExport();
+                    }
+                    BatchOperations.enterSelectionMode();
+                }
+            });
+        }
+    }
+
+    // 绑定导出相关事件
+    bindExportEvents() {
+        // 导出按钮点击事件
+        const exportButton = document.getElementById('exportToggleButton');
+        if (exportButton) {
+            exportButton.addEventListener('click', () => {
+                if (ExportManager.isExportMode) {
+                    ExportManager.closeExport();
+                } else {
+                    // 关闭其他模式
+                    if (Search && Search.isSearchMode) {
+                        Search.closeSearch();
+                    }
+                    if (FileManager && FileManager.isFileManagerMode) {
+                        FileManager.closeFileManager();
+                    }
+                    if (BatchOperations && BatchOperations.isSelectionMode) {
+                        BatchOperations.exitSelectionMode();
+                    }
+                    ExportManager.showExport();
+                }
+            });
+        }
+    }
+
     // 清理应用数据
     clearData() {
         if (confirm('确定要清除所有本地数据吗？这将删除设备ID等信息。')) {
@@ -208,16 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
 
-// 全局错误处理
+// 全局错误处理 - 通知已禁用，避免移动端弹窗遮挡输入框
 window.addEventListener('error', (event) => {
     console.error('全局错误:', event.error);
-    Utils.showNotification('应用发生错误，请刷新页面重试', 'error');
+    // Utils.showNotification('应用发生错误，请刷新页面重试', 'error');
 });
 
-// 未处理的Promise错误
+// 未处理的Promise错误 - 通知已禁用，避免移动端弹窗遮挡输入框
 window.addEventListener('unhandledrejection', (event) => {
     console.error('未处理的Promise错误:', event.reason);
-    Utils.showNotification('网络请求失败，请检查网络连接', 'error');
+    // Utils.showNotification('网络请求失败，请检查网络连接', 'error');
 });
 
 // 页面卸载时清理资源
@@ -236,6 +360,21 @@ window.API = API;
 window.UI = UI;
 window.FileUpload = FileUpload;
 window.MessageHandler = MessageHandler;
+if (typeof Search !== 'undefined') {
+    window.Search = Search;
+}
+if (typeof FileManager !== 'undefined') {
+    window.FileManager = FileManager;
+}
+if (typeof BatchOperations !== 'undefined') {
+    window.BatchOperations = BatchOperations;
+}
+if (typeof ThemeManager !== 'undefined') {
+    window.ThemeManager = ThemeManager;
+}
+if (typeof ExportManager !== 'undefined') {
+    window.ExportManager = ExportManager;
+}
 if (typeof PWA !== 'undefined') {
     window.PWA = PWA;
 }
@@ -251,6 +390,11 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         UI,
         FileUpload,
         MessageHandler,
+        Search: typeof Search !== 'undefined' ? Search : undefined,
+        FileManager: typeof FileManager !== 'undefined' ? FileManager : undefined,
+        BatchOperations: typeof BatchOperations !== 'undefined' ? BatchOperations : undefined,
+        ThemeManager: typeof ThemeManager !== 'undefined' ? ThemeManager : undefined,
+        ExportManager: typeof ExportManager !== 'undefined' ? ExportManager : undefined,
         PWA: typeof PWA !== 'undefined' ? PWA : undefined
     });
 }

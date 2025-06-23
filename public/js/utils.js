@@ -17,6 +17,27 @@ const Utils = {
         }
         return deviceId;
     },
+
+    // 获取设备名称（用于显示）
+    getDeviceName(deviceId) {
+        if (!deviceId) return '未知设备';
+
+        const currentDeviceId = this.getDeviceId();
+        if (deviceId === currentDeviceId) {
+            return '我的设备';
+        }
+
+        // 根据设备ID前缀判断设备类型
+        if (deviceId.includes('web-')) {
+            return 'Web浏览器';
+        } else if (deviceId.includes('mobile-')) {
+            return '移动设备';
+        } else if (deviceId.includes('desktop-')) {
+            return '桌面设备';
+        }
+
+        return '其他设备';
+    },
     
     // 格式化文件大小
     formatFileSize(bytes) {
@@ -258,18 +279,18 @@ const Utils = {
         return element;
     },
     
-    // 显示通知
+    // 显示通知 - 已禁用，避免移动端弹窗遮挡输入框
     showNotification(message, type = 'info') {
-        // 简单的通知实现，可以后续扩展
+        // 只在控制台输出，不显示任何弹窗或通知
         console.log(`[${type.toUpperCase()}] ${message}`);
-        
-        // 如果浏览器支持通知API
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('微信文件传输助手', {
-                body: message,
-                icon: '/favicon.ico'
-            });
-        }
+
+        // 所有通知功能已禁用，避免遮挡输入框
+        // if ('Notification' in window && Notification.permission === 'granted') {
+        //     new Notification('微信文件传输助手', {
+        //         body: message,
+        //         icon: '/favicon.ico'
+        //     });
+        // }
     },
     
     // 请求通知权限

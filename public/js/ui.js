@@ -23,7 +23,10 @@ const UI = {
             fileInput: document.getElementById('fileInput'),
             uploadStatus: document.getElementById('uploadStatus'),
             progressBar: document.getElementById('progressBar'),
-            fileButton: document.getElementById('fileButton')
+            fileButton: document.getElementById('fileButton'),
+            searchButton: document.getElementById('searchToggleButton'),
+            fileManagerButton: document.getElementById('fileManagerToggleButton'),
+            exportButton: document.getElementById('exportToggleButton')
         };
     },
     
@@ -92,6 +95,9 @@ const UI = {
             new Date(a.timestamp) - new Date(b.timestamp)
         );
 
+        // 确保顶部加载指示器存在
+        this.ensureTopLoadingIndicator();
+
         // 执行增量更新
         this.updateMessagesIncremental(sortedMessages);
 
@@ -111,6 +117,9 @@ const UI = {
             messageContainer.innerHTML = '';
             this.messageCache.clear();
         }
+
+        // 确保顶部加载指示器存在
+        this.ensureTopLoadingIndicator();
 
         // 创建新的消息ID集合
         const newMessageIds = new Set(messages.map(msg => msg.id));
@@ -147,9 +156,14 @@ const UI = {
             }
         });
 
-        // 一次性添加所有新消息到末尾
+        // 一次性添加所有新消息到顶部加载指示器之后
+        const topIndicator = messageContainer.querySelector('.top-loading-indicator');
         if (fragment.children.length > 0) {
-            messageContainer.appendChild(fragment);
+            if (topIndicator) {
+                messageContainer.insertBefore(fragment, topIndicator.nextSibling);
+            } else {
+                messageContainer.appendChild(fragment);
+            }
         }
 
         // 处理需要加载图片的消息
@@ -451,67 +465,71 @@ const UI = {
         return div.innerHTML;
     },
     
-    // 显示错误消息
+    // 显示错误消息 - 弹窗已禁用，避免移动端遮挡输入框
     showError(message) {
         Utils.showNotification(message, 'error');
-        
-        // 可以添加更明显的错误提示UI
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.textContent = message;
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff4757;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease-out;
-        `;
-        
-        document.body.appendChild(errorDiv);
-        
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 3000);
+
+        // 错误弹窗已禁用，避免遮挡输入框，只在控制台输出
+        console.error('UI错误:', message);
+
+        // const errorDiv = document.createElement('div');
+        // errorDiv.className = 'error-message';
+        // errorDiv.textContent = message;
+        // errorDiv.style.cssText = `
+        //     position: fixed;
+        //     top: 20px;
+        //     left: 50%;
+        //     transform: translateX(-50%);
+        //     background: #ff4757;
+        //     color: white;
+        //     padding: 10px 20px;
+        //     border-radius: 5px;
+        //     z-index: 1000;
+        //     animation: fadeIn 0.3s ease-out;
+        // `;
+        //
+        // document.body.appendChild(errorDiv);
+        //
+        // setTimeout(() => {
+        //     errorDiv.remove();
+        // }, 3000);
     },
     
-    // 显示成功消息
+    // 显示成功消息 - 弹窗已禁用，避免移动端遮挡输入框
     showSuccess(message) {
         Utils.showNotification(message, 'success');
 
-        // 如果是多行消息，也显示一个更明显的成功提示
-        if (message.includes('\n')) {
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success-message';
-            successDiv.innerHTML = message.replace(/\n/g, '<br>');
-            successDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: #07c160;
-                color: white;
-                padding: 15px 25px;
-                border-radius: 8px;
-                z-index: 1000;
-                animation: fadeIn 0.3s ease-out;
-                max-width: 400px;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
-                font-size: 14px;
-                line-height: 1.5;
-            `;
+        // 成功弹窗已禁用，避免遮挡输入框，只在控制台输出
+        console.log('UI成功:', message);
 
-            document.body.appendChild(successDiv);
-
-            setTimeout(() => {
-                successDiv.remove();
-            }, 5000);
-        }
+        // if (message.includes('\n')) {
+        //     const successDiv = document.createElement('div');
+        //     successDiv.className = 'success-message';
+        //     successDiv.innerHTML = message.replace(/\n/g, '<br>');
+        //     successDiv.style.cssText = `
+        //         position: fixed;
+        //         top: 20px;
+        //         left: 50%;
+        //         transform: translateX(-50%);
+        //         background: #07c160;
+        //         color: white;
+        //         padding: 15px 25px;
+        //         border-radius: 8px;
+        //         z-index: 1000;
+        //         animation: fadeIn 0.3s ease-out;
+        //         max-width: 400px;
+        //         text-align: center;
+        //         box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+        //         font-size: 14px;
+        //         line-height: 1.5;
+        //     `;
+        //
+        //     document.body.appendChild(successDiv);
+        //
+        //     setTimeout(() => {
+        //         successDiv.remove();
+        //     }, 5000);
+        // }
     },
 
     // 设置连接状态
@@ -539,12 +557,12 @@ const UI = {
             statusElement.className = `connection-status ${isOnline ? 'online' : 'offline'}`;
         }
 
-        // 只有在真正断开连接时才显示离线提示，连接中状态不显示
-        if (status === 'disconnected' && navigator.onLine) {
-            Utils.showNotification('连接已断开，正在重连...', 'warning');
-        } else if (!navigator.onLine) {
-            Utils.showNotification('已切换到离线模式，部分功能可能受限', 'warning');
-        }
+        // 连接状态通知已禁用，避免移动端弹窗遮挡输入框
+        // if (status === 'disconnected' && navigator.onLine) {
+        //     Utils.showNotification('连接已断开，正在重连...', 'warning');
+        // } else if (!navigator.onLine) {
+        //     Utils.showNotification('已切换到离线模式，部分功能可能受限', 'warning');
+        // }
     },
 
     // 显示上传状态
@@ -724,5 +742,116 @@ const UI = {
 
         // 重新加载
         await this.loadImageAsync(r2Key, safeId);
+    },
+
+    // 确保顶部加载指示器存在
+    ensureTopLoadingIndicator() {
+        const messageContainer = this.elements.messageList;
+        let topIndicator = messageContainer.querySelector('.top-loading-indicator');
+
+        if (!topIndicator) {
+            topIndicator = document.createElement('div');
+            topIndicator.className = 'top-loading-indicator';
+            topIndicator.innerHTML = `
+                <div class="top-loading-content">
+                    <div class="top-loading-spinner">⏳</div>
+                    <span class="top-loading-text">加载历史消息中...</span>
+                </div>
+            `;
+
+            // 插入到消息列表的最前面
+            messageContainer.insertBefore(topIndicator, messageContainer.firstChild);
+
+            // 默认隐藏
+            topIndicator.style.display = 'none';
+        }
+    },
+
+    // 显示/隐藏顶部加载指示器
+    showTopLoadingIndicator(show) {
+        this.ensureTopLoadingIndicator();
+        const topIndicator = this.elements.messageList.querySelector('.top-loading-indicator');
+        if (topIndicator) {
+            if (show) {
+                topIndicator.style.display = 'flex';
+                // 添加淡入动画
+                requestAnimationFrame(() => {
+                    topIndicator.classList.add('fade-in');
+                });
+            } else {
+                topIndicator.style.display = 'none';
+                topIndicator.classList.remove('fade-in');
+            }
+        }
+    },
+
+    // 获取消息容器
+    getMessageContainer() {
+        return this.elements.messageList;
+    },
+
+    // 设置搜索模式
+    setSearchMode(isSearchMode) {
+        const app = document.querySelector('.app');
+        if (isSearchMode) {
+            app.classList.add('search-mode');
+        } else {
+            app.classList.remove('search-mode');
+        }
+
+        // 更新搜索按钮状态
+        const searchButton = this.elements.searchButton;
+        if (searchButton) {
+            if (isSearchMode) {
+                searchButton.classList.add('active');
+            } else {
+                searchButton.classList.remove('active');
+            }
+        }
+    },
+
+    // 设置文件管理器模式
+    setFileManagerMode(isFileManagerMode) {
+        const app = document.querySelector('.app');
+        if (isFileManagerMode) {
+            app.classList.add('file-manager-mode');
+        } else {
+            app.classList.remove('file-manager-mode');
+        }
+
+        // 更新文件管理器按钮状态
+        const fileManagerButton = this.elements.fileManagerButton;
+        if (fileManagerButton) {
+            if (isFileManagerMode) {
+                fileManagerButton.classList.add('active');
+            } else {
+                fileManagerButton.classList.remove('active');
+            }
+        }
+    },
+
+    // 设置导出模式
+    setExportMode(isExportMode) {
+        const app = document.querySelector('.app');
+        if (isExportMode) {
+            app.classList.add('export-mode');
+        } else {
+            app.classList.remove('export-mode');
+        }
+
+        // 更新导出按钮状态
+        const exportButton = this.elements.exportButton;
+        if (exportButton) {
+            if (isExportMode) {
+                exportButton.classList.add('active');
+            } else {
+                exportButton.classList.remove('active');
+            }
+        }
+    },
+
+    // 获取文件图标（用于搜索结果）
+    getFileIcon(fileName) {
+        return Utils.getFileIcon('', fileName);
     }
 };
