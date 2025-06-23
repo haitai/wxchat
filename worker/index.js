@@ -393,8 +393,27 @@ api.post('/sync', async (c) => {
 // 批量删除消息
 api.post('/messages/batch-delete', async (c) => {
   try {
+    console.log('批量删除消息请求开始')
     const { DB, R2 } = c.env
+
+    if (!DB) {
+      console.error('数据库未绑定')
+      return c.json({
+        success: false,
+        error: '数据库未绑定'
+      }, 500)
+    }
+
+    if (!R2) {
+      console.error('R2存储未绑定')
+      return c.json({
+        success: false,
+        error: 'R2存储未绑定'
+      }, 500)
+    }
+
     const { messageIds, confirmCode } = await c.req.json()
+    console.log('请求参数:', { messageIds, confirmCode })
 
     if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
       return c.json({
@@ -422,7 +441,7 @@ api.post('/messages/batch-delete', async (c) => {
     // 获取要删除的文件消息关联的文件信息
     const placeholders = messageIds.map(() => '?').join(',')
     const fileStmt = DB.prepare(`
-      SELECT f.r2_key, f.file_size, f.original_name
+      SELECT f.id, f.r2_key, f.file_size, f.original_name
       FROM messages m
       LEFT JOIN files f ON m.file_id = f.id
       WHERE m.id IN (${placeholders}) AND m.type = 'file' AND f.id IS NOT NULL
@@ -442,24 +461,24 @@ api.post('/messages/batch-delete', async (c) => {
       }
     }
 
-    // 删除数据库中的文件记录
-    if (filesToDelete.results.length > 0) {
-      const deleteFilesStmt = DB.prepare(`
-        DELETE FROM files
-        WHERE id IN (
-          SELECT f.id FROM messages m
-          LEFT JOIN files f ON m.file_id = f.id
-          WHERE m.id IN (${placeholders}) AND m.type = 'file'
-        )
-      `)
-      await deleteFilesStmt.bind(...messageIds).run()
-    }
-
-    // 删除消息记录
+    // 先删除消息记录（这样就不会有外键约束问题）
     const deleteMessagesStmt = DB.prepare(`
       DELETE FROM messages WHERE id IN (${placeholders})
     `)
     const deleteResult = await deleteMessagesStmt.bind(...messageIds).run()
+
+    // 然后删除数据库中的文件记录
+    if (filesToDelete.results.length > 0) {
+      const fileIds = filesToDelete.results.map(f => f.id).filter(id => id) // 获取文件ID
+
+      if (fileIds.length > 0) {
+        const filePlaceholders = fileIds.map(() => '?').join(',')
+        const deleteFilesStmt = DB.prepare(`
+          DELETE FROM files WHERE id IN (${filePlaceholders})
+        `)
+        await deleteFilesStmt.bind(...fileIds).run()
+      }
+    }
 
     return c.json({
       success: true,
@@ -472,9 +491,10 @@ api.post('/messages/batch-delete', async (c) => {
     })
   } catch (error) {
     console.error('批量删除消息失败:', error)
+    console.error('错误详情:', error.stack)
     return c.json({
       success: false,
-      error: error.message
+      error: `批量删除失败: ${error.message}`
     }, 500)
   }
 })
@@ -1043,10 +1063,21 @@ api.get('/search', async (c) => {
 // 文件分类接口
 api.get('/files/categories', async (c) => {
   try {
+    console.log('文件分类请求开始')
     const { DB } = c.env
+
+    if (!DB) {
+      console.error('数据库未绑定')
+      return c.json({
+        success: false,
+        error: '数据库未绑定'
+      }, 500)
+    }
+
     const category = c.req.query('category') || 'all' // all, image, document, audio, video, archive, other
     const limit = parseInt(c.req.query('limit') || '50')
     const offset = parseInt(c.req.query('offset') || '0')
+    console.log('请求参数:', { category, limit, offset })
 
     // 构建文件分类SQL
     let sql = `
@@ -1141,9 +1172,51 @@ api.get('/files/categories', async (c) => {
 
     // 添加相同的分类过滤条件到计数查询
     if (category !== 'all') {
-      const categoryCondition = sql.substring(sql.indexOf('WHERE 1=1') + 9, sql.indexOf('ORDER BY')).trim()
-      if (categoryCondition) {
-        countSql += categoryCondition
+      switch (category) {
+        case 'image':
+          countSql += ` AND f.mime_type LIKE 'image/%'`
+          break
+        case 'document':
+          countSql += ` AND (
+            f.mime_type LIKE '%pdf%' OR
+            f.mime_type LIKE '%document%' OR
+            f.mime_type LIKE '%word%' OR
+            f.mime_type LIKE '%excel%' OR
+            f.mime_type LIKE '%powerpoint%' OR
+            f.mime_type LIKE '%presentation%' OR
+            f.mime_type LIKE 'text/%'
+          )`
+          break
+        case 'audio':
+          countSql += ` AND f.mime_type LIKE 'audio/%'`
+          break
+        case 'video':
+          countSql += ` AND f.mime_type LIKE 'video/%'`
+          break
+        case 'archive':
+          countSql += ` AND (
+            f.mime_type LIKE '%zip%' OR
+            f.mime_type LIKE '%rar%' OR
+            f.mime_type LIKE '%compressed%' OR
+            f.mime_type LIKE '%archive%'
+          )`
+          break
+        case 'other':
+          countSql += ` AND f.mime_type NOT LIKE 'image/%'
+                       AND f.mime_type NOT LIKE 'audio/%'
+                       AND f.mime_type NOT LIKE 'video/%'
+                       AND f.mime_type NOT LIKE '%pdf%'
+                       AND f.mime_type NOT LIKE '%document%'
+                       AND f.mime_type NOT LIKE '%word%'
+                       AND f.mime_type NOT LIKE '%excel%'
+                       AND f.mime_type NOT LIKE '%powerpoint%'
+                       AND f.mime_type NOT LIKE '%presentation%'
+                       AND f.mime_type NOT LIKE 'text/%'
+                       AND f.mime_type NOT LIKE '%zip%'
+                       AND f.mime_type NOT LIKE '%rar%'
+                       AND f.mime_type NOT LIKE '%compressed%'
+                       AND f.mime_type NOT LIKE '%archive%'`
+          break
       }
     }
 
@@ -1162,9 +1235,11 @@ api.get('/files/categories', async (c) => {
       stats: statsResult
     })
   } catch (error) {
+    console.error('文件分类查询失败:', error)
+    console.error('错误详情:', error.stack)
     return c.json({
       success: false,
-      error: error.message
+      error: `文件分类查询失败: ${error.message}`
     }, 500)
   }
 })
