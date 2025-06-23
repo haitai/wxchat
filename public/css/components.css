@@ -699,6 +699,148 @@
     animation: spin 1s linear infinite;
 }
 
+/* 功能按钮 - 微信风格 (更新版本) */
+.function-button {
+    background: #07c160;
+    color: white;
+    border: none;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 4px;
+    touch-action: manipulation;
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(7, 193, 96, 0.2);
+    font-size: 16px;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+/* 功能按钮显示状态 */
+.function-button.show {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 功能按钮隐藏状态 */
+.function-button.hide {
+    transform: translateY(-50%) scale(0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.function-button:hover:not(:disabled) {
+    background: #06ad56;
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3);
+}
+
+.function-button:hover .function-icon {
+    transform: rotate(90deg);
+}
+
+.function-button:active:not(:disabled) {
+    background: #059748;
+    transform: translateY(-50%) scale(0.95);
+}
+
+/* 功能按钮图标 */
+.function-icon {
+    width: 16px;
+    height: 16px;
+    color: white;
+    transition: transform 0.2s ease;
+}
+
+/* 功能菜单弹窗 */
+.function-menu {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    z-index: 1000;
+    transform: scale(0) translateY(20px);
+    opacity: 0;
+    transition: all 0.2s ease;
+    transform-origin: bottom right;
+    min-width: 200px;
+}
+
+/* 功能菜单显示状态 */
+.function-menu.show {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+}
+
+/* 功能菜单项 */
+.function-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    gap: 12px;
+    font-size: 14px;
+    color: #333;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.function-menu-item:hover {
+    background-color: #f5f5f5;
+}
+
+.function-menu-item:active {
+    background-color: #e6e6e6;
+}
+
+/* 功能菜单项图标 */
+.function-menu-item-icon {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+/* 功能菜单项文本 */
+.function-menu-item-text {
+    flex: 1;
+    font-weight: 400;
+}
+
+/* 功能菜单遮罩 */
+.function-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    background: transparent;
+    display: none;
+}
+
+.function-menu-overlay.show {
+    display: block;
+}
+
 /* PWA相关样式 */
 
 /* PWA安装按钮（已禁用） */

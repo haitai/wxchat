@@ -20,6 +20,7 @@ const UI = {
             messageForm: document.getElementById('messageForm'),
             messageText: document.getElementById('messageText'),
             sendButton: document.getElementById('sendButton'),
+            functionButton: document.getElementById('functionButton'),
             fileInput: document.getElementById('fileInput'),
             uploadStatus: document.getElementById('uploadStatus'),
             progressBar: document.getElementById('progressBar'),
@@ -33,6 +34,21 @@ const UI = {
         this.elements.messageText.addEventListener('input', () => {
             this.autoResizeTextarea();
             this.checkInputAndToggleSendButton();
+        });
+
+        // 监听其他可能改变输入框内容的事件
+        this.elements.messageText.addEventListener('paste', () => {
+            // 粘贴后稍微延迟检查，确保内容已更新
+            setTimeout(() => {
+                this.checkInputAndToggleSendButton();
+            }, 10);
+        });
+
+        this.elements.messageText.addEventListener('cut', () => {
+            // 剪切后稍微延迟检查
+            setTimeout(() => {
+                this.checkInputAndToggleSendButton();
+            }, 10);
         });
 
         // 回车发送消息
@@ -135,30 +151,17 @@ const UI = {
             if (!this.messageCache.has(message.id)) {
                 const messageElement = this.createMessageElement(message, currentDeviceId);
 
-                // 找到正确的插入位置
-                const insertPosition = this.findInsertPosition(message, messages, index);
-
-                if (insertPosition === null) {
-                    // 添加到fragment，稍后一次性插入
-                    fragment.appendChild(messageElement);
-                } else {
-                    // 直接插入到指定位置
-                    messageContainer.insertBefore(messageElement, insertPosition);
-                }
+                // 新消息直接添加到fragment，保持数据库排序
+                fragment.appendChild(messageElement);
 
                 this.messageCache.set(message.id, messageElement);
                 newElements.push(messageElement);
             }
         });
 
-        // 一次性添加所有新消息到顶部加载指示器之后
-        const topIndicator = messageContainer.querySelector('.top-loading-indicator');
+        // 一次性添加所有新消息到末尾（保持时间顺序）
         if (fragment.children.length > 0) {
-            if (topIndicator) {
-                messageContainer.insertBefore(fragment, topIndicator.nextSibling);
-            } else {
-                messageContainer.appendChild(fragment);
-            }
+            messageContainer.appendChild(fragment);
         }
 
         // 处理需要加载图片的消息
@@ -433,10 +436,34 @@ const UI = {
         }
     },
 
-    // 检查输入内容并切换发送按钮显示
+    // 显示/隐藏功能按钮 - 微信风格
+    toggleFunctionButton(show) {
+        if (this.elements.functionButton) {
+            if (show) {
+                this.elements.functionButton.classList.remove('hide');
+                this.elements.functionButton.classList.add('show');
+            } else {
+                this.elements.functionButton.classList.remove('show');
+                this.elements.functionButton.classList.add('hide');
+            }
+        }
+    },
+
+    // 检查输入内容并切换按钮显示 - 动态切换逻辑
     checkInputAndToggleSendButton() {
         const hasContent = this.getInputValue().length > 0;
+        console.log('UI: 检查输入状态，有内容:', hasContent, '内容:', this.getInputValue());
+
+        // 微信风格：有内容时显示发送按钮，隐藏功能按钮
+        // 无内容时显示功能按钮，隐藏发送按钮
         this.toggleSendButton(hasContent);
+        this.toggleFunctionButton(!hasContent);
+
+        // 如果有功能按钮组件，也通知它更新状态
+        if (window.FunctionButton && typeof window.FunctionButton.updateVisibility === 'function') {
+            console.log('UI: 通知功能按钮组件更新状态');
+            window.FunctionButton.updateVisibility();
+        }
     },
     
 
@@ -445,7 +472,10 @@ const UI = {
     clearInput() {
         this.elements.messageText.value = '';
         this.autoResizeTextarea();
-        this.toggleSendButton(false); // 清空输入时隐藏发送按钮
+
+        // 清空输入时重新检查按钮状态
+        console.log('UI: 清空输入框，重新检查按钮状态');
+        this.checkInputAndToggleSendButton();
     },
     
     // 获取输入内容

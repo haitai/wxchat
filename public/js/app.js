@@ -36,6 +36,22 @@ class WeChatApp {
             UI.init();
             FileUpload.init();
 
+            // 初始化功能组件 - 确保在UI初始化之后
+            console.log('App: 开始初始化功能组件');
+            if (typeof FunctionMenu !== 'undefined') {
+                console.log('App: 初始化功能菜单');
+                FunctionMenu.init();
+                // 将组件暴露到全局
+                window.FunctionMenu = FunctionMenu;
+            }
+
+            if (typeof FunctionButton !== 'undefined') {
+                console.log('App: 初始化功能按钮');
+                FunctionButton.init();
+                // 将组件暴露到全局，供UI模块使用
+                window.FunctionButton = FunctionButton;
+            }
+
             // 初始化PWA功能
             if (typeof PWA !== 'undefined') {
                 PWA.init();
@@ -45,6 +61,9 @@ class WeChatApp {
             UI.setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
 
             MessageHandler.init();
+
+            // 绑定功能菜单事件
+            this.bindFunctionMenuEvents();
 
             // 标记为已初始化
             this.isInitialized = true;
@@ -148,6 +167,59 @@ class WeChatApp {
             //     Utils.showNotification('欢迎使用微信文件传输助手！', 'info');
             // }, 1000);
         }
+    }
+
+    // 绑定功能菜单事件
+    bindFunctionMenuEvents() {
+        // 监听功能菜单项点击事件
+        document.addEventListener('functionMenu:itemClick', (e) => {
+            const { action, itemId } = e.detail;
+            this.handleFunctionMenuAction(action, itemId);
+        });
+
+        // 监听清空聊天事件
+        document.addEventListener('functionMenu:clearChat', async () => {
+            try {
+                await MessageHandler.clearAllMessages();
+                UI.showSuccess('聊天记录已清空');
+            } catch (error) {
+                UI.showError('清空聊天记录失败');
+                console.error('清空聊天记录失败:', error);
+            }
+        });
+    }
+
+    // 处理功能菜单动作
+    handleFunctionMenuAction(action, itemId) {
+        console.log(`功能菜单动作: ${action}, 项目ID: ${itemId}`);
+
+        // 这里可以根据需要添加更多的功能处理逻辑
+        switch (action) {
+            case 'quickReply':
+                // 快速回复功能已在 FunctionMenu 组件中处理
+                break;
+            case 'emoji':
+                // 表情功能已在 FunctionMenu 组件中处理
+                break;
+            case 'markdown':
+                // Markdown 功能已在 FunctionMenu 组件中处理
+                break;
+            case 'codeSnippet':
+                // 代码片段功能已在 FunctionMenu 组件中处理
+                break;
+            case 'settings':
+                // 可以在这里添加更复杂的设置功能
+                this.showSettings();
+                break;
+            default:
+                console.log(`未处理的功能: ${action}`);
+        }
+    }
+
+    // 显示设置界面（占位符）
+    showSettings() {
+        // 这里可以实现设置界面
+        alert('设置功能将在后续版本中实现');
     }
 
     // 显示初始化错误
