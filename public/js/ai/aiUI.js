@@ -30,25 +30,42 @@ const AIUI = {
     createAIMessageElement(message) {
         console.log('AIUI: 创建AI消息元素', { message });
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message ai fade-in';
-        messageDiv.dataset.messageId = message.id;
-        messageDiv.dataset.timestamp = message.timestamp;
+        try {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ai fade-in';
+            messageDiv.dataset.messageId = message.id;
+            messageDiv.dataset.timestamp = message.timestamp;
 
-        let content = '';
-        if (message.type === CONFIG.MESSAGE_TYPES.AI_THINKING) {
-            content = this.renderThinkingMessage(message);
-        } else if (message.type === CONFIG.MESSAGE_TYPES.AI_RESPONSE) {
-            content = this.renderResponseMessage(message);
-        } else {
-            // 降级处理：渲染为普通AI消息
-            content = this.renderSimpleAIMessage(message);
+            let content = '';
+            if (message.type === CONFIG.MESSAGE_TYPES.AI_THINKING) {
+                console.log('AIUI: 渲染思考消息');
+                content = this.renderThinkingMessage(message);
+            } else if (message.type === CONFIG.MESSAGE_TYPES.AI_RESPONSE) {
+                console.log('AIUI: 渲染响应消息');
+                content = this.renderResponseMessage(message);
+            } else {
+                console.log('AIUI: 使用简单AI消息渲染');
+                // 降级处理：渲染为普通AI消息
+                content = this.renderSimpleAIMessage(message);
+            }
+
+            if (!content) {
+                console.error('AIUI: 消息内容为空');
+                content = this.renderSimpleAIMessage(message);
+            }
+
+            messageDiv.innerHTML = content;
+            console.log('AIUI: AI消息元素创建完成', {
+                messageId: message.id,
+                contentLength: content.length,
+                element: messageDiv
+            });
+
+            return messageDiv;
+        } catch (error) {
+            console.error('AIUI: 创建AI消息元素失败', error);
+            return null;
         }
-
-        messageDiv.innerHTML = content;
-        console.log('AIUI: AI消息元素创建完成', { messageId: message.id, content });
-
-        return messageDiv;
     },
     
     // 渲染思考过程消息
@@ -122,19 +139,20 @@ const AIUI = {
     // 渲染简单AI消息（降级处理）
     renderSimpleAIMessage(message) {
         const time = Utils.formatTime(message.timestamp);
-        const content = this.escapeHtml(message.content || '');
+        const content = this.escapeHtml(message.content || '正在处理...');
+        const indicator = message.isThinking ? '🤔 思考中' : '🤖 AI助手';
 
         return `
             <div class="message-content ai-response-message">
                 <div class="ai-response-header">
-                    <span class="ai-response-indicator">🤖 ${CONFIG.AI.RESPONSE_INDICATOR}</span>
+                    <span class="ai-response-indicator">${indicator}</span>
                 </div>
-                <div class="text-message">
+                <div class="text-message" id="ai-msg-${message.id}">
                     ${content}
                 </div>
             </div>
             <div class="message-meta">
-                <span>${CONFIG.AI.RESPONSE_INDICATOR}</span>
+                <span>AI助手</span>
                 <span class="message-time">${time}</span>
             </div>
         `;

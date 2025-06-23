@@ -387,43 +387,62 @@ const UI = {
     addAIMessage(message) {
         console.log('UI: 添加AI消息', { message });
 
+        // 检查必要的元素
+        if (!this.elements.messageList) {
+            console.error('UI: messageList 元素不存在');
+            return;
+        }
+
         // 检查用户是否在底部
         const wasAtBottom = this.isAtBottom();
 
         // 如果当前是空状态，先清空
         if (this.elements.messageList.querySelector('.empty-state')) {
+            console.log('UI: 清空空状态');
             this.elements.messageList.innerHTML = '';
             this.messageCache.clear();
         }
 
         // 如果消息已存在，不重复添加
         if (this.messageCache.has(message.id)) {
+            console.log('UI: 消息已存在，跳过添加', { messageId: message.id });
             return;
         }
 
         // 使用AIUI创建AI消息元素
         let messageElement;
         if (window.AIUI && typeof AIUI.createAIMessageElement === 'function') {
+            console.log('UI: 使用AIUI创建AI消息元素');
             messageElement = AIUI.createAIMessageElement(message);
         } else {
+            console.log('UI: AIUI不可用，使用降级处理');
             // 降级处理：使用普通消息元素
             messageElement = this.createMessageElement(message, 'ai-system');
             messageElement.classList.add('ai');
         }
 
+        if (!messageElement) {
+            console.error('UI: 消息元素创建失败');
+            return;
+        }
+
+        console.log('UI: 准备添加消息元素到DOM', { messageElement });
+
         // 添加到末尾
         this.elements.messageList.appendChild(messageElement);
         this.messageCache.set(message.id, messageElement);
+
+        console.log('UI: 消息元素已添加到DOM');
 
         // 添加淡入动画
         requestAnimationFrame(() => {
             messageElement.classList.add('fade-in');
         });
 
-        // 自动滚动到底部
-        if (wasAtBottom) {
-            this.scrollToBottom();
-        }
+        // 强制滚动到底部
+        this.scrollToBottom();
+
+        console.log('UI: AI消息添加完成');
     },
 
     // 更新AI思考过程

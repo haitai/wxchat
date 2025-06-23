@@ -216,7 +216,7 @@ api.get('/messages', async (c) => {
 api.post('/messages', async (c) => {
   try {
     const { DB } = c.env
-    const { content, deviceId } = await c.req.json()
+    const { content, deviceId, type = 'text' } = await c.req.json()
 
     if (!content || !deviceId) {
       return c.json({
@@ -230,13 +230,53 @@ api.post('/messages', async (c) => {
       VALUES (?, ?, ?)
     `)
 
-    const result = await stmt.bind('text', content, deviceId).run()
+    const result = await stmt.bind(type, content, deviceId).run()
 
     return c.json({
       success: true,
       data: { id: result.meta.last_row_id }
     })
   } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500)
+  }
+})
+
+// AI消息处理接口
+api.post('/ai/message', async (c) => {
+  try {
+    const { DB } = c.env
+    const { content, deviceId, type = 'ai_response' } = await c.req.json()
+
+    if (!content || !deviceId) {
+      return c.json({
+        success: false,
+        error: '内容和设备ID不能为空'
+      }, 400)
+    }
+
+    // 存储AI消息到数据库
+    const stmt = DB.prepare(`
+      INSERT INTO messages (type, content, device_id)
+      VALUES (?, ?, ?)
+    `)
+
+    const result = await stmt.bind(type, content, deviceId).run()
+
+    return c.json({
+      success: true,
+      data: {
+        id: result.meta.last_row_id,
+        type: type,
+        content: content,
+        device_id: deviceId,
+        timestamp: new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    console.error('AI消息存储失败:', error)
     return c.json({
       success: false,
       error: error.message

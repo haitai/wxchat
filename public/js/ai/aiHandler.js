@@ -87,28 +87,36 @@ const AIHandler = {
         
         try {
             console.log('AIHandler: 开始处理AI消息', { content });
-            
+
             // 清理消息内容（移除AI标识符）
             const cleanContent = this.cleanAIMessage(content);
-            
+
             // 发送用户消息（标记为AI消息）
             await this.sendUserAIMessage(cleanContent);
-            
-            // 显示思考过程
-            const thinkingId = await this.showThinkingProcess();
-            
-            // 调用AI API
-            const result = await AIAPI.streamChat(cleanContent, {
-                onThinking: (thinking) => this.updateThinking(thinkingId, thinking),
-                onThinkingComplete: (thinking) => this.completeThinking(thinkingId, thinking),
-                onResponse: (chunk, fullResponse) => this.updateResponse(chunk, fullResponse)
+
+            // 显示思考过程（临时前端显示）
+            const thinkingElement = this.addMessageDirectly({
+                id: `thinking-${Date.now()}`,
+                type: 'ai_thinking',
+                content: '🤔 AI正在思考...',
+                device_id: 'ai-system',
+                timestamp: new Date().toISOString(),
+                isThinking: true
             });
-            
-            // 完成AI响应
-            await this.completeAIResponse(result);
-            
+
+            // 调用AI API
+            const result = await AIAPI.streamChat(cleanContent);
+
+            // 移除思考消息
+            if (thinkingElement && thinkingElement.parentNode) {
+                thinkingElement.parentNode.removeChild(thinkingElement);
+            }
+
+            // 直接存储最终的AI响应到数据库
+            await this.storeAIResponse(result.response || '抱歉，我无法生成回答。');
+
             console.log('AIHandler: AI消息处理完成');
-            
+
         } catch (error) {
             console.error('AIHandler: AI消息处理失败', error);
             await this.handleAIError(error);
@@ -153,22 +161,59 @@ const AIHandler = {
     async showThinkingProcess() {
         const thinkingId = `thinking-${Date.now()}`;
         this.currentThinkingMessageId = thinkingId;
-        
-        // 创建思考消息元素
-        const thinkingMessage = {
+
+        try {
+            // 通过API存储思考消息到数据库
+            const response = await fetch('/api/ai/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({
+                    content: '🤔 AI正在思考...',
+                    deviceId: 'ai-system',
+                    type: 'ai_thinking'
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('AIHandler: 思考消息已存储到数据库', result);
+
+                // 触发消息刷新
+                if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
+                    await MessageHandler.loadMessages(true);
+                }
+
+                return result.data.id; // 返回数据库中的真实ID
+            } else {
+                console.error('AIHandler: 思考消息存储失败');
+                // 降级到前端显示
+                return this.showThinkingProcessFallback();
+            }
+        } catch (error) {
+            console.error('AIHandler: 思考消息API调用失败', error);
+            // 降级到前端显示
+            return this.showThinkingProcessFallback();
+        }
+    },
+
+    // 降级方案：前端显示思考过程
+    showThinkingProcessFallback() {
+        const thinkingId = `thinking-${Date.now()}`;
+        this.currentThinkingMessageId = thinkingId;
+
+        // 直接添加到DOM作为备用方案
+        this.addMessageDirectly({
             id: thinkingId,
-            type: CONFIG.MESSAGE_TYPES.AI_THINKING,
-            content: CONFIG.AI.THINKING_INDICATOR,
+            type: 'ai_thinking',
+            content: '🤔 AI正在思考...',
             device_id: 'ai-system',
             timestamp: new Date().toISOString(),
             isThinking: true
-        };
-        
-        // 添加到UI
-        if (window.UI && typeof UI.addAIMessage === 'function') {
-            UI.addAIMessage(thinkingMessage);
-        }
-        
+        });
+
         return thinkingId;
     },
     
@@ -191,23 +236,105 @@ const AIHandler = {
     async startAIResponse() {
         const responseId = `response-${Date.now()}`;
         this.currentResponseMessageId = responseId;
-        
+
         // 创建响应消息元素
         const responseMessage = {
             id: responseId,
-            type: CONFIG.MESSAGE_TYPES.AI_RESPONSE,
+            type: 'ai_response', // 直接使用字符串
             content: '',
             device_id: 'ai-system',
             timestamp: new Date().toISOString(),
             isAIResponse: true
         };
-        
+
         // 添加到UI
+        console.log('AIHandler: 准备添加响应消息到UI', { responseMessage });
         if (window.UI && typeof UI.addAIMessage === 'function') {
             UI.addAIMessage(responseMessage);
+        } else {
+            console.error('AIHandler: UI.addAIMessage 方法不可用');
+            // 尝试直接添加到DOM作为备用方案
+            this.addMessageDirectly(responseMessage);
         }
-        
+
         return responseId;
+    },
+
+    // 存储AI响应到数据库
+    async storeAIResponse(content) {
+        try {
+            console.log('AIHandler: 存储AI响应到数据库', { content });
+
+            const response = await fetch('/api/ai/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({
+                    content: content,
+                    deviceId: 'ai-system',
+                    type: 'ai_response'
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('AIHandler: AI响应已存储到数据库', result);
+
+                // 触发消息刷新，显示新的AI响应
+                if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
+                    await MessageHandler.loadMessages(true);
+                }
+
+                return result.data.id;
+            } else {
+                console.error('AIHandler: AI响应存储失败');
+                throw new Error('存储AI响应失败');
+            }
+        } catch (error) {
+            console.error('AIHandler: 存储AI响应时出错', error);
+            // 降级处理：直接在前端显示
+            this.addMessageDirectly({
+                id: `response-${Date.now()}`,
+                type: 'ai_response',
+                content: content,
+                device_id: 'ai-system',
+                timestamp: new Date().toISOString(),
+                isAIResponse: true
+            });
+        }
+    },
+
+    // 直接添加消息到DOM（备用方案）
+    addMessageDirectly(message) {
+        console.log('AIHandler: 使用备用方案直接添加消息到DOM');
+
+        const messageList = document.getElementById('messageList');
+        if (!messageList) {
+            console.error('AIHandler: 找不到messageList元素');
+            return null;
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai fade-in';
+        messageDiv.dataset.messageId = message.id;
+        messageDiv.innerHTML = `
+            <div class="message-content" style="background: #1e90ff; color: white; padding: 12px; border-radius: 8px;">
+                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">🤖 AI助手</div>
+                <div id="ai-msg-${message.id}">${message.content || '正在处理...'}</div>
+            </div>
+            <div class="message-meta">
+                <span>AI助手</span>
+                <span class="message-time">${new Date().toLocaleTimeString()}</span>
+            </div>
+        `;
+
+        messageList.appendChild(messageDiv);
+        messageList.scrollTop = messageList.scrollHeight;
+
+        console.log('AIHandler: 消息已直接添加到DOM');
+        return messageDiv;
     },
     
     // 更新AI响应
@@ -219,20 +346,57 @@ const AIHandler = {
     
     // 完成AI响应
     async completeAIResponse(result) {
-        console.log('AIHandler: AI响应完成', { 
+        console.log('AIHandler: AI响应完成', {
             thinkingLength: result.thinking?.length || 0,
             responseLength: result.response?.length || 0
         });
-        
-        // 标记响应完成
-        if (this.currentResponseMessageId && window.UI && typeof UI.completeAIResponse === 'function') {
-            UI.completeAIResponse(this.currentResponseMessageId, result.response);
+
+        try {
+            // 将最终的AI响应存储到数据库
+            const response = await fetch('/api/ai/message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({
+                    content: result.response || '抱歉，我无法生成回答。',
+                    deviceId: 'ai-system',
+                    type: 'ai_response'
+                })
+            });
+
+            if (response.ok) {
+                const apiResult = await response.json();
+                console.log('AIHandler: AI响应已存储到数据库', apiResult);
+
+                // 触发消息刷新，显示完整的对话
+                if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
+                    await MessageHandler.loadMessages(true);
+                }
+            } else {
+                console.error('AIHandler: AI响应存储失败');
+                // 降级处理：直接在前端显示
+                this.completeAIResponseFallback(result);
+            }
+        } catch (error) {
+            console.error('AIHandler: AI响应API调用失败', error);
+            // 降级处理：直接在前端显示
+            this.completeAIResponseFallback(result);
         }
-        
-        // 滚动到底部
-        if (window.UI && typeof UI.scrollToBottom === 'function') {
-            UI.scrollToBottom();
-        }
+    },
+
+    // 降级方案：前端显示AI响应
+    completeAIResponseFallback(result) {
+        // 直接添加AI响应到DOM
+        this.addMessageDirectly({
+            id: `response-${Date.now()}`,
+            type: 'ai_response',
+            content: result.response || '抱歉，我无法生成回答。',
+            device_id: 'ai-system',
+            timestamp: new Date().toISOString(),
+            isAIResponse: true
+        });
     },
     
     // 处理AI错误
