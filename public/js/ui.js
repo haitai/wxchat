@@ -87,10 +87,8 @@ const UI = {
         // 检查用户是否在底部
         const wasAtBottom = this.isAtBottom();
 
-        // 按时间戳升序排序（旧消息在上，新消息在下）
-        const sortedMessages = [...messages].sort((a, b) =>
-            new Date(a.timestamp) - new Date(b.timestamp)
-        );
+        // 数据库已经按时间戳升序排序，直接使用
+        const sortedMessages = messages;
 
         // 确保顶部加载指示器存在
         this.ensureTopLoadingIndicator();
