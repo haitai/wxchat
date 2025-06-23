@@ -26,7 +26,7 @@ const CONFIG = {
     
     // UI 配置
     UI: {
-        AUTO_REFRESH_INTERVAL: 3000, // 3秒自动刷新（更快响应）
+        AUTO_REFRESH_INTERVAL: 1000, // 1秒自动刷新（更快响应）
         MESSAGE_LOAD_LIMIT: 50, // 每次加载消息数量
         ANIMATION_DURATION: 100, // 动画持续时间(ms)（更快动画）
         TYPING_INDICATOR_DELAY: 1000, // 输入指示器延迟

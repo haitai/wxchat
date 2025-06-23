@@ -17,27 +17,6 @@ const Utils = {
         }
         return deviceId;
     },
-
-    // 获取设备名称（用于显示）
-    getDeviceName(deviceId) {
-        if (!deviceId) return '未知设备';
-
-        const currentDeviceId = this.getDeviceId();
-        if (deviceId === currentDeviceId) {
-            return '我的设备';
-        }
-
-        // 根据设备ID前缀判断设备类型
-        if (deviceId.includes('web-')) {
-            return 'Web浏览器';
-        } else if (deviceId.includes('mobile-')) {
-            return '移动设备';
-        } else if (deviceId.includes('desktop-')) {
-            return '桌面设备';
-        }
-
-        return '其他设备';
-    },
     
     // 格式化文件大小
     formatFileSize(bytes) {

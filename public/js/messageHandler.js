@@ -66,7 +66,8 @@ const MessageHandler = {
             });
 
             Realtime.on('newMessages', (data) => {
-                this.loadMessages();
+                // 立即加载消息，强制滚动到底部
+                this.loadMessages(true);
             });
         } else {
             this.startAutoRefresh();
@@ -328,8 +329,21 @@ const MessageHandler = {
             // 清空输入框
             UI.clearInput();
 
-            // 重新加载消息（发送消息后强制滚动到底部）
+            // 立即重新加载消息（发送消息后强制滚动到底部）
             await this.loadMessages(true);
+
+            // 多次延迟加载，确保消息显示
+            setTimeout(async () => {
+                await this.loadMessages(true);
+            }, 200);
+
+            setTimeout(async () => {
+                await this.loadMessages(true);
+            }, 800);
+
+            setTimeout(async () => {
+                await this.loadMessages(true);
+            }, 1500);
 
             UI.showSuccess(CONFIG.SUCCESS.MESSAGE_SENT);
             UI.setConnectionStatus('connected');

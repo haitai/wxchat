@@ -23,10 +23,7 @@ const UI = {
             fileInput: document.getElementById('fileInput'),
             uploadStatus: document.getElementById('uploadStatus'),
             progressBar: document.getElementById('progressBar'),
-            fileButton: document.getElementById('fileButton'),
-            searchButton: document.getElementById('searchToggleButton'),
-            fileManagerButton: document.getElementById('fileManagerToggleButton'),
-            exportButton: document.getElementById('exportToggleButton')
+            fileButton: document.getElementById('fileButton')
         };
     },
     
@@ -788,70 +785,5 @@ const UI = {
     // 获取消息容器
     getMessageContainer() {
         return this.elements.messageList;
-    },
-
-    // 设置搜索模式
-    setSearchMode(isSearchMode) {
-        const app = document.querySelector('.app');
-        if (isSearchMode) {
-            app.classList.add('search-mode');
-        } else {
-            app.classList.remove('search-mode');
-        }
-
-        // 更新搜索按钮状态
-        const searchButton = this.elements.searchButton;
-        if (searchButton) {
-            if (isSearchMode) {
-                searchButton.classList.add('active');
-            } else {
-                searchButton.classList.remove('active');
-            }
-        }
-    },
-
-    // 设置文件管理器模式
-    setFileManagerMode(isFileManagerMode) {
-        const app = document.querySelector('.app');
-        if (isFileManagerMode) {
-            app.classList.add('file-manager-mode');
-        } else {
-            app.classList.remove('file-manager-mode');
-        }
-
-        // 更新文件管理器按钮状态
-        const fileManagerButton = this.elements.fileManagerButton;
-        if (fileManagerButton) {
-            if (isFileManagerMode) {
-                fileManagerButton.classList.add('active');
-            } else {
-                fileManagerButton.classList.remove('active');
-            }
-        }
-    },
-
-    // 设置导出模式
-    setExportMode(isExportMode) {
-        const app = document.querySelector('.app');
-        if (isExportMode) {
-            app.classList.add('export-mode');
-        } else {
-            app.classList.remove('export-mode');
-        }
-
-        // 更新导出按钮状态
-        const exportButton = this.elements.exportButton;
-        if (exportButton) {
-            if (isExportMode) {
-                exportButton.classList.add('active');
-            } else {
-                exportButton.classList.remove('active');
-            }
-        }
-    },
-
-    // 获取文件图标（用于搜索结果）
-    getFileIcon(fileName) {
-        return Utils.getFileIcon('', fileName);
     }
 };

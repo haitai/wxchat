@@ -36,35 +36,6 @@ class WeChatApp {
             UI.init();
             FileUpload.init();
 
-            // 初始化搜索功能
-            if (typeof Search !== 'undefined') {
-                Search.init();
-                this.bindSearchEvents();
-            }
-
-            // 初始化文件管理器
-            if (typeof FileManager !== 'undefined') {
-                FileManager.init();
-                this.bindFileManagerEvents();
-            }
-
-            // 初始化批量操作
-            if (typeof BatchOperations !== 'undefined') {
-                BatchOperations.init();
-                this.bindBatchOperationsEvents();
-            }
-
-            // 初始化主题管理器
-            if (typeof ThemeManager !== 'undefined') {
-                ThemeManager.init();
-            }
-
-            // 初始化导出管理器
-            if (typeof ExportManager !== 'undefined') {
-                ExportManager.init();
-                this.bindExportEvents();
-            }
-
             // 初始化PWA功能
             if (typeof PWA !== 'undefined') {
                 PWA.init();
@@ -220,100 +191,6 @@ class WeChatApp {
 
 
 
-    // 绑定搜索相关事件
-    bindSearchEvents() {
-        // 搜索按钮点击事件
-        const searchButton = document.getElementById('searchToggleButton');
-        if (searchButton) {
-            searchButton.addEventListener('click', () => {
-                if (Search.isSearchMode) {
-                    Search.closeSearch();
-                } else {
-                    // 关闭其他模式
-                    if (FileManager && FileManager.isFileManagerMode) {
-                        FileManager.closeFileManager();
-                    }
-                    Search.showSearch();
-                }
-            });
-        }
-    }
-
-    // 绑定文件管理器相关事件
-    bindFileManagerEvents() {
-        // 文件管理器按钮点击事件
-        const fileManagerButton = document.getElementById('fileManagerToggleButton');
-        if (fileManagerButton) {
-            fileManagerButton.addEventListener('click', () => {
-                if (FileManager.isFileManagerMode) {
-                    FileManager.closeFileManager();
-                } else {
-                    // 关闭其他模式
-                    if (Search && Search.isSearchMode) {
-                        Search.closeSearch();
-                    }
-                    if (BatchOperations && BatchOperations.isSelectionMode) {
-                        BatchOperations.exitSelectionMode();
-                    }
-                    if (ExportManager && ExportManager.isExportMode) {
-                        ExportManager.closeExport();
-                    }
-                    FileManager.showFileManager();
-                }
-            });
-        }
-    }
-
-    // 绑定批量操作相关事件
-    bindBatchOperationsEvents() {
-        // 批量操作按钮点击事件
-        const batchButton = document.getElementById('batchOperationsToggleButton');
-        if (batchButton) {
-            batchButton.addEventListener('click', () => {
-                if (BatchOperations.isSelectionMode) {
-                    BatchOperations.exitSelectionMode();
-                } else {
-                    // 关闭其他模式
-                    if (Search && Search.isSearchMode) {
-                        Search.closeSearch();
-                    }
-                    if (FileManager && FileManager.isFileManagerMode) {
-                        FileManager.closeFileManager();
-                    }
-                    if (ExportManager && ExportManager.isExportMode) {
-                        ExportManager.closeExport();
-                    }
-                    BatchOperations.enterSelectionMode();
-                }
-            });
-        }
-    }
-
-    // 绑定导出相关事件
-    bindExportEvents() {
-        // 导出按钮点击事件
-        const exportButton = document.getElementById('exportToggleButton');
-        if (exportButton) {
-            exportButton.addEventListener('click', () => {
-                if (ExportManager.isExportMode) {
-                    ExportManager.closeExport();
-                } else {
-                    // 关闭其他模式
-                    if (Search && Search.isSearchMode) {
-                        Search.closeSearch();
-                    }
-                    if (FileManager && FileManager.isFileManagerMode) {
-                        FileManager.closeFileManager();
-                    }
-                    if (BatchOperations && BatchOperations.isSelectionMode) {
-                        BatchOperations.exitSelectionMode();
-                    }
-                    ExportManager.showExport();
-                }
-            });
-        }
-    }
-
     // 清理应用数据
     clearData() {
         if (confirm('确定要清除所有本地数据吗？这将删除设备ID等信息。')) {
@@ -360,21 +237,6 @@ window.API = API;
 window.UI = UI;
 window.FileUpload = FileUpload;
 window.MessageHandler = MessageHandler;
-if (typeof Search !== 'undefined') {
-    window.Search = Search;
-}
-if (typeof FileManager !== 'undefined') {
-    window.FileManager = FileManager;
-}
-if (typeof BatchOperations !== 'undefined') {
-    window.BatchOperations = BatchOperations;
-}
-if (typeof ThemeManager !== 'undefined') {
-    window.ThemeManager = ThemeManager;
-}
-if (typeof ExportManager !== 'undefined') {
-    window.ExportManager = ExportManager;
-}
 if (typeof PWA !== 'undefined') {
     window.PWA = PWA;
 }
@@ -390,11 +252,6 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         UI,
         FileUpload,
         MessageHandler,
-        Search: typeof Search !== 'undefined' ? Search : undefined,
-        FileManager: typeof FileManager !== 'undefined' ? FileManager : undefined,
-        BatchOperations: typeof BatchOperations !== 'undefined' ? BatchOperations : undefined,
-        ThemeManager: typeof ThemeManager !== 'undefined' ? ThemeManager : undefined,
-        ExportManager: typeof ExportManager !== 'undefined' ? ExportManager : undefined,
         PWA: typeof PWA !== 'undefined' ? PWA : undefined
     });
 }
