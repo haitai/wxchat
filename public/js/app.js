@@ -57,6 +57,25 @@ class WeChatApp {
                 PWA.init();
             }
 
+            // 初始化AI模块
+            console.log('App: 开始初始化AI模块');
+            if (typeof AIUI !== 'undefined') {
+                console.log('App: 初始化AI UI');
+                AIUI.init();
+                window.AIUI = AIUI;
+            }
+
+            if (typeof AIHandler !== 'undefined') {
+                console.log('App: 初始化AI处理器');
+                const aiInitSuccess = AIHandler.init();
+                if (aiInitSuccess) {
+                    window.AIHandler = AIHandler;
+                    console.log('App: AI模块初始化成功');
+                } else {
+                    console.warn('App: AI模块初始化失败，AI功能将不可用');
+                }
+            }
+
             // 设置初始连接状态
             UI.setConnectionStatus(navigator.onLine ? 'connected' : 'disconnected');
 
@@ -312,6 +331,16 @@ window.MessageHandler = MessageHandler;
 if (typeof PWA !== 'undefined') {
     window.PWA = PWA;
 }
+// AI模块全局导出
+if (typeof AIAPI !== 'undefined') {
+    window.AIAPI = AIAPI;
+}
+if (typeof AIUI !== 'undefined') {
+    window.AIUI = AIUI;
+}
+if (typeof AIHandler !== 'undefined') {
+    window.AIHandler = AIHandler;
+}
 
 // 开发模式下的调试信息
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
@@ -324,6 +353,9 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         UI,
         FileUpload,
         MessageHandler,
-        PWA: typeof PWA !== 'undefined' ? PWA : undefined
+        PWA: typeof PWA !== 'undefined' ? PWA : undefined,
+        AIAPI: typeof AIAPI !== 'undefined' ? AIAPI : undefined,
+        AIUI: typeof AIUI !== 'undefined' ? AIUI : undefined,
+        AIHandler: typeof AIHandler !== 'undefined' ? AIHandler : undefined
     });
 }

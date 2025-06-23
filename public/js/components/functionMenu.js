@@ -75,6 +75,12 @@ const FunctionMenu = {
             icon: '⭐',
             title: '收藏',
             action: 'favorite'
+        },
+        {
+            id: 'ai-chat',
+            icon: '🤖',
+            title: 'AI助手',
+            action: 'aiChat'
         }
     ],
 
@@ -222,6 +228,9 @@ const FunctionMenu = {
             case 'favorite':
                 this.handleFavorite();
                 break;
+            case 'aiChat':
+                this.handleAiChat();
+                break;
             default:
                 console.log(`未实现的功能: ${action}`);
                 this.showComingSoon(action);
@@ -302,6 +311,37 @@ const FunctionMenu = {
     // 收藏功能
     handleFavorite() {
         this.insertTextToInput('⭐ [收藏] 分享了一个收藏');
+    },
+
+    // AI助手功能
+    handleAiChat() {
+        console.log('FunctionMenu: 启动AI助手功能');
+
+        // 检查AI功能是否可用
+        if (!CONFIG.AI.ENABLED) {
+            this.insertTextToInput('🤖 AI功能暂未启用');
+            return;
+        }
+
+        // 切换AI模式
+        if (window.AIHandler && typeof AIHandler.toggleAIMode === 'function') {
+            const isAIMode = AIHandler.toggleAIMode();
+
+            // 如果启用了AI模式，在输入框中添加AI标识
+            if (isAIMode) {
+                this.insertTextToInput('🤖 ');
+            }
+        } else {
+            // 如果AI模块未加载，显示提示
+            this.insertTextToInput('🤖 AI模块正在加载中...');
+
+            // 尝试初始化AI模块
+            setTimeout(() => {
+                if (window.AIHandler && typeof AIHandler.init === 'function') {
+                    AIHandler.init();
+                }
+            }, 100);
+        }
     },
 
     // 显示即将推出提示

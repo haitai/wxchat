@@ -46,7 +46,23 @@ const CONFIG = {
     // 消息类型
     MESSAGE_TYPES: {
         TEXT: 'text',
-        FILE: 'file'
+        FILE: 'file',
+        AI_THINKING: 'ai_thinking',
+        AI_RESPONSE: 'ai_response'
+    },
+
+    // AI 配置
+    AI: {
+        ENABLED: true,
+        API_BASE_URL: 'https://api.siliconflow.cn/v1',
+        API_KEY: 'sk-jcjftvgfaismslthkpdnsabzpkpidqatyajoesdowcutyoyh',
+        MODEL: 'deepseek-ai/DeepSeek-R1',
+        MAX_TOKENS: 4000,
+        TEMPERATURE: 0.7,
+        STREAM: true,
+        THINKING_INDICATOR: '🤔 AI正在思考...',
+        RESPONSE_INDICATOR: '🤖 AI助手',
+        MODE_INDICATOR: '🤖 AI模式'
     },
     
     // 文件类型图标映射 - 完整版
@@ -202,7 +218,10 @@ const CONFIG = {
         LOAD_MESSAGES_FAILED: '加载消息失败',
         DEVICE_SYNC_FAILED: '设备同步失败',
         CLEAR_FAILED: '数据清理失败',
-        CLEAR_CANCELLED: '数据清理已取消'
+        CLEAR_CANCELLED: '数据清理已取消',
+        AI_REQUEST_FAILED: 'AI请求失败，请稍后重试',
+        AI_STREAM_ERROR: 'AI流式响应中断',
+        AI_PARSE_ERROR: 'AI响应解析失败'
     },
     
     // 成功消息
@@ -210,7 +229,9 @@ const CONFIG = {
         FILE_UPLOADED: '文件上传成功',
         MESSAGE_SENT: '消息发送成功',
         DEVICE_SYNCED: '设备同步成功',
-        DATA_CLEARED: '数据清理成功'
+        DATA_CLEARED: '数据清理成功',
+        AI_MODE_ENABLED: 'AI模式已启用',
+        AI_MODE_DISABLED: 'AI模式已关闭'
     }
 };
 
@@ -222,6 +243,7 @@ Object.freeze(CONFIG.FILE);
 Object.freeze(CONFIG.UI);
 Object.freeze(CONFIG.DEVICE);
 Object.freeze(CONFIG.MESSAGE_TYPES);
+Object.freeze(CONFIG.AI);
 Object.freeze(CONFIG.FILE_ICONS);
 Object.freeze(CONFIG.FILE_EXTENSION_ICONS);
 Object.freeze(CONFIG.CLEAR);

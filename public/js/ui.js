@@ -382,6 +382,104 @@ const UI = {
             this.scrollToBottom();
         }
     },
+
+    // 添加AI消息到列表
+    addAIMessage(message) {
+        console.log('UI: 添加AI消息', { message });
+
+        // 检查用户是否在底部
+        const wasAtBottom = this.isAtBottom();
+
+        // 如果当前是空状态，先清空
+        if (this.elements.messageList.querySelector('.empty-state')) {
+            this.elements.messageList.innerHTML = '';
+            this.messageCache.clear();
+        }
+
+        // 如果消息已存在，不重复添加
+        if (this.messageCache.has(message.id)) {
+            return;
+        }
+
+        // 使用AIUI创建AI消息元素
+        let messageElement;
+        if (window.AIUI && typeof AIUI.createAIMessageElement === 'function') {
+            messageElement = AIUI.createAIMessageElement(message);
+        } else {
+            // 降级处理：使用普通消息元素
+            messageElement = this.createMessageElement(message, 'ai-system');
+            messageElement.classList.add('ai');
+        }
+
+        // 添加到末尾
+        this.elements.messageList.appendChild(messageElement);
+        this.messageCache.set(message.id, messageElement);
+
+        // 添加淡入动画
+        requestAnimationFrame(() => {
+            messageElement.classList.add('fade-in');
+        });
+
+        // 自动滚动到底部
+        if (wasAtBottom) {
+            this.scrollToBottom();
+        }
+    },
+
+    // 更新AI思考过程
+    updateAIThinking(thinkingId, thinking) {
+        if (window.AIUI && typeof AIUI.updateThinkingContent === 'function') {
+            AIUI.updateThinkingContent(thinkingId, thinking);
+        }
+    },
+
+    // 更新AI响应
+    updateAIResponse(responseId, chunk, fullResponse) {
+        if (window.AIUI && typeof AIUI.updateResponseContent === 'function') {
+            AIUI.updateResponseContent(responseId, chunk, fullResponse);
+        }
+    },
+
+    // 完成AI响应
+    completeAIResponse(responseId, finalContent) {
+        if (window.AIUI && typeof AIUI.completeResponse === 'function') {
+            AIUI.completeResponse(responseId, finalContent);
+        }
+    },
+
+    // 移除消息
+    removeMessage(messageId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            messageElement.remove();
+            this.messageCache.delete(messageId);
+        }
+
+        // 如果是AI消息，也从AI UI中移除
+        if (window.AIUI && typeof AIUI.removeAIMessage === 'function') {
+            AIUI.removeAIMessage(messageId);
+        }
+    },
+
+    // 更新AI模式状态
+    updateAIMode(isAIMode) {
+        console.log('UI: 更新AI模式状态', { isAIMode });
+
+        // 使用AIUI更新模式指示器
+        if (window.AIUI && typeof AIUI.updateAIModeIndicator === 'function') {
+            AIUI.updateAIModeIndicator(isAIMode);
+        }
+
+        // 更新输入框样式
+        const inputContainer = document.querySelector('.input-container');
+        if (inputContainer) {
+            if (isAIMode) {
+                inputContainer.classList.add('ai-mode');
+            } else {
+                inputContainer.classList.remove('ai-mode');
+            }
+        }
+    },
     
     // 检查是否在底部
     isAtBottom() {
