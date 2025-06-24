@@ -379,7 +379,6 @@ const MessageHandler = {
 
     // 处理AI消息
     async handleAIMessage(content) {
-        console.log('MessageHandler: 处理AI消息', { content });
 
         // 清空输入框
         UI.clearInput();
@@ -590,7 +589,7 @@ const MessageHandler = {
             const success = await API.syncDevice(deviceId, deviceName);
             
             if (success) {
-                console.log('设备同步成功');
+                // 设备同步成功
             }
             
         } catch (error) {

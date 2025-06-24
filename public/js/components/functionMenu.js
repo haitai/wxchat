@@ -16,36 +16,8 @@ const FunctionMenu = {
             title: '相册',
             action: 'album'
         },
-        {
-            id: 'video',
-            icon: '📹',
-            title: '视频通话',
-            action: 'video'
-        },
-        {
-            id: 'location',
-            icon: '📍',
-            title: '位置',
-            action: 'location'
-        },
-        {
-            id: 'red-packet',
-            icon: '🧧',
-            title: '红包',
-            action: 'redPacket'
-        },
-        {
-            id: 'transfer',
-            icon: '💰',
-            title: '转账',
-            action: 'transfer'
-        },
-        {
-            id: 'voice-input',
-            icon: '🎤',
-            title: '语音输入',
-            action: 'voiceInput'
-        },
+
+
         {
             id: 'emoji',
             icon: '😊',
@@ -59,28 +31,41 @@ const FunctionMenu = {
             action: 'file'
         },
         {
-            id: 'music',
-            icon: '🎵',
-            title: '音乐',
-            action: 'music'
+            id: 'search',
+            icon: '🔍',
+            title: '搜索',
+            action: 'search'
         },
-        {
-            id: 'card',
-            icon: '👤',
-            title: '个人名片',
-            action: 'card'
-        },
-        {
-            id: 'favorite',
-            icon: '⭐',
-            title: '收藏',
-            action: 'favorite'
-        },
+
         {
             id: 'ai-chat',
             icon: '🤖',
             title: 'AI助手',
             action: 'aiChat'
+        },
+        {
+            id: 'ai-image-gen',
+            icon: '🎨',
+            title: 'AI绘画',
+            action: 'aiImageGen'
+        },
+        {
+            id: 'clear-chat',
+            icon: '🧹',
+            title: '清理记录',
+            action: 'clearChat'
+        },
+        {
+            id: 'pwa-manage',
+            icon: '📱',
+            title: 'PWA管理',
+            action: 'pwaManage'
+        },
+        {
+            id: 'logout',
+            icon: '🚪',
+            title: '登出',
+            action: 'logout'
         }
     ],
 
@@ -90,15 +75,12 @@ const FunctionMenu = {
     // 初始化菜单
     init() {
         if (this.isInitialized) {
-            console.log('FunctionMenu: 已经初始化过了');
             return;
         }
 
-        console.log('FunctionMenu: 开始初始化');
         this.createMenuElement();
         this.bindEvents();
         this.isInitialized = true;
-        console.log('FunctionMenu: 初始化完成');
     },
 
     // 创建菜单DOM元素
@@ -106,11 +88,8 @@ const FunctionMenu = {
         // 检查是否已存在
         const existingMenu = document.getElementById('functionMenu');
         if (existingMenu) {
-            console.log('FunctionMenu: 菜单元素已存在');
             return;
         }
-
-        console.log('FunctionMenu: 创建菜单元素');
         const menuHTML = `
             <div class="function-menu" id="functionMenu">
                 <div class="function-menu-overlay"></div>
@@ -132,7 +111,6 @@ const FunctionMenu = {
 
         // 插入到body中
         document.body.insertAdjacentHTML('beforeend', menuHTML);
-        console.log('FunctionMenu: 菜单元素创建完成');
     },
 
     // 生成菜单项HTML - 微信风格
@@ -198,48 +176,80 @@ const FunctionMenu = {
             case 'album':
                 this.handleAlbum();
                 break;
-            case 'video':
-                this.handleVideo();
-                break;
-            case 'location':
-                this.handleLocation();
-                break;
-            case 'redPacket':
-                this.handleRedPacket();
-                break;
-            case 'transfer':
-                this.handleTransfer();
-                break;
-            case 'voiceInput':
-                this.handleVoiceInput();
-                break;
+
+
             case 'emoji':
                 this.handleEmoji();
                 break;
             case 'file':
                 this.handleFile();
                 break;
-            case 'music':
-                this.handleMusic();
+            case 'search':
+                this.handleSearch();
                 break;
-            case 'card':
-                this.handleCard();
-                break;
-            case 'favorite':
-                this.handleFavorite();
-                break;
+
             case 'aiChat':
                 this.handleAiChat();
                 break;
+            case 'aiImageGen':
+                this.handleAiImageGen();
+                break;
+            case 'clearChat':
+                this.handleClearChat();
+                break;
+            case 'pwaManage':
+                this.handlePwaManage();
+                break;
+            case 'logout':
+                this.handleLogout();
+                break;
             default:
-                console.log(`未实现的功能: ${action}`);
                 this.showComingSoon(action);
         }
     },
 
-    // 拍摄功能
+    // 拍摄功能 - 调用系统原生相机
     handlePhoto() {
-        this.showComingSoon('拍摄');
+        // 创建隐藏的文件输入元素，设置为调用相机
+        const cameraInput = document.createElement('input');
+        cameraInput.type = 'file';
+        cameraInput.accept = 'image/*';
+        cameraInput.capture = 'environment'; // 调用后置摄像头
+        cameraInput.style.display = 'none';
+
+        // 监听文件选择
+        cameraInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                try {
+                    // 显示上传状态
+                    UI.showSuccess('📸 正在处理照片...');
+
+                    // 上传文件
+                    const deviceId = Utils.getDeviceId();
+                    await API.uploadFile(file, deviceId);
+
+                    // 刷新消息列表
+                    setTimeout(async () => {
+                        await MessageHandler.loadMessages(true);
+                    }, 500);
+
+                    UI.showSuccess('📸 照片发送成功！');
+                } catch (error) {
+                    console.error('拍照上传失败:', error);
+                    UI.showError('照片上传失败，请重试');
+                }
+            }
+
+            // 清理临时元素
+            if (cameraInput.parentNode) {
+                cameraInput.parentNode.removeChild(cameraInput);
+            }
+        });
+
+        // 添加到DOM并触发点击
+        document.body.appendChild(cameraInput);
+        cameraInput.click();
     },
 
     // 相册功能
@@ -254,30 +264,9 @@ const FunctionMenu = {
         }
     },
 
-    // 视频通话功能
-    handleVideo() {
-        this.showComingSoon('视频通话');
-    },
 
-    // 位置功能
-    handleLocation() {
-        this.insertTextToInput('📍 [位置信息]');
-    },
 
-    // 红包功能
-    handleRedPacket() {
-        this.insertTextToInput('🧧 [红包] 恭喜发财，大吉大利！');
-    },
 
-    // 转账功能
-    handleTransfer() {
-        this.insertTextToInput('💰 [转账] 已向您转账');
-    },
-
-    // 语音输入功能
-    handleVoiceInput() {
-        this.showComingSoon('语音输入');
-    },
 
     // 表情功能
     handleEmoji() {
@@ -298,25 +287,36 @@ const FunctionMenu = {
         }
     },
 
-    // 音乐功能
-    handleMusic() {
-        this.insertTextToInput('🎵 [音乐] 分享了一首歌曲');
-    },
 
-    // 个人名片功能
-    handleCard() {
-        this.insertTextToInput('👤 [个人名片] 推荐了一个联系人');
-    },
 
-    // 收藏功能
-    handleFavorite() {
-        this.insertTextToInput('⭐ [收藏] 分享了一个收藏');
+    // 搜索功能
+    handleSearch() {
+        // 检查搜索功能是否可用
+        if (!CONFIG.SEARCH.ENABLED) {
+            this.insertTextToInput('🔍 搜索功能暂未启用');
+            return;
+        }
+
+        // 检查SearchUI是否已加载
+        if (window.SearchUI && typeof SearchUI.showSearchModal === 'function') {
+            // 显示搜索模态框
+            SearchUI.showSearchModal();
+        } else {
+            // 如果搜索模块未加载，显示提示
+            this.insertTextToInput('🔍 搜索模块正在加载中...');
+
+            // 尝试初始化搜索模块
+            setTimeout(() => {
+                if (window.SearchUI && typeof SearchUI.init === 'function') {
+                    SearchUI.init();
+                    SearchUI.showSearchModal();
+                }
+            }, 100);
+        }
     },
 
     // AI助手功能
     handleAiChat() {
-        console.log('FunctionMenu: 启动AI助手功能');
-
         // 检查AI功能是否可用
         if (!CONFIG.AI.ENABLED) {
             this.insertTextToInput('🤖 AI功能暂未启用');
@@ -339,6 +339,104 @@ const FunctionMenu = {
             setTimeout(() => {
                 if (window.AIHandler && typeof AIHandler.init === 'function') {
                     AIHandler.init();
+                }
+            }, 100);
+        }
+    },
+
+    // AI图片生成功能
+    handleAiImageGen() {
+        // 检查图片生成功能是否可用
+        if (!CONFIG.IMAGE_GEN.ENABLED) {
+            this.insertTextToInput('🎨 AI图片生成功能暂未启用');
+            return;
+        }
+
+        // 检查ImageGenUI是否已加载
+        if (window.ImageGenUI && typeof ImageGenUI.showImageGenModal === 'function') {
+            // 显示图片生成模态框
+            ImageGenUI.showImageGenModal();
+        } else {
+            // 如果UI模块未加载，显示提示
+            this.insertTextToInput('🎨 AI图片生成模块正在加载中...');
+
+            // 尝试初始化图片生成模块
+            setTimeout(() => {
+                if (window.ImageGenUI && typeof ImageGenUI.init === 'function') {
+                    ImageGenUI.init();
+                    ImageGenUI.showImageGenModal();
+                }
+            }, 100);
+        }
+    },
+
+    // 聊天记录清理功能
+    handleClearChat() {
+        // 复用现有的清理逻辑
+        if (window.MessageHandler && typeof MessageHandler.handleClearCommand === 'function') {
+            MessageHandler.handleClearCommand();
+        } else {
+            // 如果MessageHandler未加载，显示提示
+            this.insertTextToInput('🧹 正在初始化清理功能...');
+
+            // 尝试通过输入清理命令来触发
+            setTimeout(() => {
+                const messageText = document.getElementById('messageText');
+                if (messageText) {
+                    messageText.value = '/clear-all';
+                    // 触发发送消息
+                    const sendButton = document.getElementById('sendButton');
+                    if (sendButton) {
+                        sendButton.click();
+                    }
+                }
+            }, 100);
+        }
+    },
+
+    // PWA管理功能
+    handlePwaManage() {
+        // 复用现有的PWA逻辑
+        if (window.MessageHandler && typeof MessageHandler.handlePWACommand === 'function') {
+            MessageHandler.handlePWACommand();
+        } else {
+            // 如果MessageHandler未加载，显示提示
+            this.insertTextToInput('📱 正在初始化PWA管理功能...');
+
+            // 尝试通过输入PWA命令来触发
+            setTimeout(() => {
+                const messageText = document.getElementById('messageText');
+                if (messageText) {
+                    messageText.value = '/pwa';
+                    // 触发发送消息
+                    const sendButton = document.getElementById('sendButton');
+                    if (sendButton) {
+                        sendButton.click();
+                    }
+                }
+            }, 100);
+        }
+    },
+
+    // 登出功能
+    handleLogout() {
+        // 复用现有的登出逻辑
+        if (window.MessageHandler && typeof MessageHandler.handleLogoutCommand === 'function') {
+            MessageHandler.handleLogoutCommand();
+        } else {
+            // 如果MessageHandler未加载，显示提示
+            this.insertTextToInput('🚪 正在初始化登出功能...');
+
+            // 尝试通过输入登出命令来触发
+            setTimeout(() => {
+                const messageText = document.getElementById('messageText');
+                if (messageText) {
+                    messageText.value = '/logout';
+                    // 触发发送消息
+                    const sendButton = document.getElementById('sendButton');
+                    if (sendButton) {
+                        sendButton.click();
+                    }
                 }
             }, 100);
         }
@@ -375,7 +473,6 @@ const FunctionMenu = {
     show() {
         const menu = document.getElementById('functionMenu');
         if (menu) {
-            console.log('FunctionMenu: 显示菜单');
             menu.classList.add('show');
         } else {
             console.error('FunctionMenu: 无法显示菜单，元素不存在');
@@ -386,7 +483,6 @@ const FunctionMenu = {
     hide() {
         const menu = document.getElementById('functionMenu');
         if (menu) {
-            console.log('FunctionMenu: 隐藏菜单');
             menu.classList.remove('show');
         } else {
             console.error('FunctionMenu: 无法隐藏菜单，元素不存在');

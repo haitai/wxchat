@@ -342,3 +342,19 @@
 .function-menu-grid::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* 管理命令菜单项统一样式 - 与其他图标保持一致 */
+.function-menu-item[data-action="clearChat"] .function-menu-item-icon,
+.function-menu-item[data-action="pwaManage"] .function-menu-item-icon,
+.function-menu-item[data-action="logout"] .function-menu-item-icon {
+    background: #f8f9fa;
+    color: inherit;
+}
+
+/* 管理命令菜单项悬停效果 - 统一样式 */
+.function-menu-item[data-action="clearChat"]:hover .function-menu-item-icon,
+.function-menu-item[data-action="pwaManage"]:hover .function-menu-item-icon,
+.function-menu-item[data-action="logout"]:hover .function-menu-item-icon {
+    background: #f8f9fa;
+    transform: scale(1.05);
+}

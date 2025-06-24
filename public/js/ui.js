@@ -569,7 +569,6 @@ const UI = {
     // 检查输入内容并切换按钮显示 - 动态切换逻辑
     checkInputAndToggleSendButton() {
         const hasContent = this.getInputValue().length > 0;
-        console.log('UI: 检查输入状态，有内容:', hasContent, '内容:', this.getInputValue());
 
         // 微信风格：有内容时显示发送按钮，隐藏功能按钮
         // 无内容时显示功能按钮，隐藏发送按钮
@@ -578,7 +577,6 @@ const UI = {
 
         // 如果有功能按钮组件，也通知它更新状态
         if (window.FunctionButton && typeof window.FunctionButton.updateVisibility === 'function') {
-            console.log('UI: 通知功能按钮组件更新状态');
             window.FunctionButton.updateVisibility();
         }
     },
@@ -591,7 +589,6 @@ const UI = {
         this.autoResizeTextarea();
 
         // 清空输入时重新检查按钮状态
-        console.log('UI: 清空输入框，重新检查按钮状态');
         this.checkInputAndToggleSendButton();
     },
     

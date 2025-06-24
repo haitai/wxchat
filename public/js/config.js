@@ -13,7 +13,10 @@ const CONFIG = {
             // 鉴权相关接口
             AUTH_LOGIN: '/api/auth/login',
             AUTH_VERIFY: '/api/auth/verify',
-            AUTH_LOGOUT: '/api/auth/logout'
+            AUTH_LOGOUT: '/api/auth/logout',
+            // 搜索相关接口
+            SEARCH: '/api/search',
+            SEARCH_SUGGESTIONS: '/api/search/suggestions'
         }
     },
     
@@ -63,6 +66,20 @@ const CONFIG = {
         THINKING_INDICATOR: '🤔 AI正在思考...',
         RESPONSE_INDICATOR: '🤖 AI助手',
         MODE_INDICATOR: '🤖 AI模式'
+    },
+
+    // AI图片生成配置
+    IMAGE_GEN: {
+        ENABLED: true,
+        API_KEY: 'sk-cowojsuuakqrsaizlldlimbhewnokgjhvczjnwwydxnvrczv',
+        MODEL: 'Kwai-Kolors/Kolors',
+        DEFAULT_SIZE: '1024x1024',
+        DEFAULT_STEPS: 20,
+        DEFAULT_GUIDANCE: 7.5,
+        MAX_PROMPT_LENGTH: 1000,
+        GENERATING_INDICATOR: '🎨 AI正在生成图片...',
+        UPLOADING_INDICATOR: '📤 正在保存图片...',
+        SUCCESS_INDICATOR: '✅ 图片生成完成'
     },
     
     // 文件类型图标映射 - 完整版
@@ -221,7 +238,18 @@ const CONFIG = {
         CLEAR_CANCELLED: '数据清理已取消',
         AI_REQUEST_FAILED: 'AI请求失败，请稍后重试',
         AI_STREAM_ERROR: 'AI流式响应中断',
-        AI_PARSE_ERROR: 'AI响应解析失败'
+        AI_PARSE_ERROR: 'AI响应解析失败',
+        IMAGE_GEN_FAILED: 'AI图片生成失败',
+        IMAGE_GEN_PROMPT_EMPTY: '请输入图片描述',
+        IMAGE_GEN_PROMPT_TOO_LONG: '图片描述过长，请简化',
+        IMAGE_GEN_DOWNLOAD_FAILED: '图片下载失败',
+        IMAGE_GEN_UPLOAD_FAILED: '图片保存失败',
+        IMAGE_GEN_API_ERROR: 'AI图片生成服务暂时不可用',
+        IMAGE_GEN_QUOTA_EXCEEDED: '图片生成次数已达上限',
+        SEARCH_FAILED: '搜索失败，请稍后重试',
+        SEARCH_QUERY_TOO_SHORT: '搜索关键词太短',
+        SEARCH_NO_RESULTS: '没有找到匹配的结果',
+        SEARCH_SERVER_ERROR: '搜索服务暂时不可用'
     },
     
     // 成功消息
@@ -231,8 +259,37 @@ const CONFIG = {
         DEVICE_SYNCED: '设备同步成功',
         DATA_CLEARED: '数据清理成功',
         AI_MODE_ENABLED: 'AI模式已启用',
-        AI_MODE_DISABLED: 'AI模式已关闭'
-    }
+        AI_MODE_DISABLED: 'AI模式已关闭',
+        IMAGE_GEN_SUCCESS: '图片生成成功',
+        IMAGE_GEN_SAVED: '图片已保存到聊天记录',
+        SEARCH_COMPLETED: '搜索完成',
+        SEARCH_HISTORY_CLEARED: '搜索历史已清除'
+    },
+
+    // 搜索功能配置
+    SEARCH: {
+        ENABLED: true,
+        MAX_RESULTS: 100,
+        RESULTS_PER_PAGE: 20,
+        DEBOUNCE_DELAY: 300,
+        MIN_QUERY_LENGTH: 1,
+        HIGHLIGHT_CLASS: 'search-highlight',
+        HISTORY_LIMIT: 20,
+        DEFAULT_FILTERS: {
+            type: 'all',
+            timeRange: 'all',
+            deviceId: 'all'
+        },
+        FILE_TYPE_CATEGORIES: {
+            'image': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/svg+xml', 'image/webp'],
+            'video': ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/mkv', 'video/flv', 'video/webm'],
+            'audio': ['audio/mp3', 'audio/wav', 'audio/aac', 'audio/flac', 'audio/ogg', 'audio/m4a'],
+            'document': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            'archive': ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar'],
+            'text': ['text/plain', 'text/html', 'text/css', 'text/javascript', 'text/markdown'],
+            'code': ['application/javascript', 'application/json', 'application/xml']
+        }
+    },
 };
 
 // 冻结配置对象，防止意外修改
@@ -244,9 +301,11 @@ Object.freeze(CONFIG.UI);
 Object.freeze(CONFIG.DEVICE);
 Object.freeze(CONFIG.MESSAGE_TYPES);
 Object.freeze(CONFIG.AI);
+Object.freeze(CONFIG.IMAGE_GEN);
 Object.freeze(CONFIG.FILE_ICONS);
 Object.freeze(CONFIG.FILE_EXTENSION_ICONS);
 Object.freeze(CONFIG.CLEAR);
 Object.freeze(CONFIG.PWA);
 Object.freeze(CONFIG.ERRORS);
 Object.freeze(CONFIG.SUCCESS);
+Object.freeze(CONFIG.SEARCH);

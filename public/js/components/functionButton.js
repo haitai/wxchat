@@ -26,11 +26,9 @@ const FunctionButton = {
 
     // 执行实际初始化
     doInit() {
-        console.log('FunctionButton: 开始初始化');
         this.cacheElements();
         this.bindEvents();
         this.updateVisibility();
-        console.log('FunctionButton: 初始化完成', this.elements);
     },
 
     // 缓存DOM元素
@@ -41,18 +39,14 @@ const FunctionButton = {
         // 检查关键元素是否存在
         if (!this.elements.functionButton) {
             console.error('FunctionButton: 找不到功能按钮元素 #functionButton');
-        } else {
-            console.log('FunctionButton: 功能按钮元素已找到');
         }
     },
 
     // 绑定事件
     bindEvents() {
         if (this.elements.functionButton) {
-            console.log('FunctionButton: 绑定点击事件');
             // 点击功能按钮显示菜单
             this.elements.functionButton.addEventListener('click', (e) => {
-                console.log('FunctionButton: 按钮被点击');
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggleMenu();
@@ -115,7 +109,6 @@ const FunctionButton = {
         }
 
         const hasContent = messageText.value.trim().length > 0;
-        console.log('FunctionButton: 更新可见性，有内容:', hasContent, '内容:', messageText.value);
 
         if (hasContent) {
             this.hide();
@@ -126,11 +119,9 @@ const FunctionButton = {
 
     // 切换菜单显示状态
     toggleMenu() {
-        console.log('FunctionButton: 切换菜单状态，当前状态:', this.isMenuOpen);
 
         // 确保功能菜单已初始化
         if (!this.elements.functionMenu && window.FunctionMenu) {
-            console.log('FunctionButton: 功能菜单未找到，尝试重新获取');
             this.elements.functionMenu = document.getElementById('functionMenu');
         }
 
@@ -143,23 +134,18 @@ const FunctionButton = {
 
     // 显示功能菜单
     showMenu() {
-        console.log('FunctionButton: 尝试显示菜单');
-
         // 如果菜单元素不存在，先初始化菜单
         if (!this.elements.functionMenu && window.FunctionMenu) {
-            console.log('FunctionButton: 初始化功能菜单');
             window.FunctionMenu.init();
             this.elements.functionMenu = document.getElementById('functionMenu');
         }
 
         if (!this.elements.functionMenu) {
-            console.error('FunctionButton: 无法显示菜单，菜单元素不存在');
             return;
         }
 
         if (this.isMenuOpen) return;
 
-        console.log('FunctionButton: 显示菜单');
         this.isMenuOpen = true;
         this.elements.functionMenu.classList.add('show');
 

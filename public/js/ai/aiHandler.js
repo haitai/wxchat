@@ -12,12 +12,9 @@ const AIHandler = {
     
     // 初始化AI处理器
     init() {
-        console.log('AIHandler: 初始化AI处理器');
-        
         // 验证AI配置
         try {
             AIAPI.validateConfig();
-            console.log('AIHandler: AI配置验证成功');
         } catch (error) {
             console.error('AIHandler: AI配置验证失败', error);
             return false;
@@ -54,9 +51,7 @@ const AIHandler = {
     // 切换AI模式
     toggleAIMode() {
         this.isAIMode = !this.isAIMode;
-        
-        console.log('AIHandler: AI模式切换', { isAIMode: this.isAIMode });
-        
+
         // 更新UI状态
         if (window.UI && typeof UI.updateAIMode === 'function') {
             UI.updateAIMode(this.isAIMode);
@@ -79,14 +74,12 @@ const AIHandler = {
     // 处理AI消息
     async handleAIMessage(content) {
         if (this.isProcessing) {
-            console.log('AIHandler: AI正在处理中，忽略新请求');
             return;
         }
         
         this.isProcessing = true;
         
         try {
-            console.log('AIHandler: 开始处理AI消息', { content });
 
             // 清理消息内容（移除AI标识符）
             const cleanContent = this.cleanAIMessage(content);
@@ -94,28 +87,31 @@ const AIHandler = {
             // 发送用户消息（标记为AI消息）
             await this.sendUserAIMessage(cleanContent);
 
-            // 显示思考过程（临时前端显示）
-            const thinkingElement = this.addMessageDirectly({
-                id: `thinking-${Date.now()}`,
-                type: 'ai_thinking',
-                content: '🤔 AI正在思考...',
-                device_id: 'ai-system',
-                timestamp: new Date().toISOString(),
-                isThinking: true
+            // 创建流式显示的AI响应元素
+            const streamingElement = this.createStreamingAIMessage();
+
+            // 调用AI API，实现真正的流式显示
+            const result = await AIAPI.streamChat(cleanContent, {
+                onResponse: (chunk, fullResponse) => {
+                    this.updateStreamingMessage(streamingElement, fullResponse);
+                }
             });
 
-            // 调用AI API
-            const result = await AIAPI.streamChat(cleanContent);
+            // 标记流式显示完成
+            this.completeStreamingMessage(streamingElement);
 
-            // 移除思考消息
-            if (thinkingElement && thinkingElement.parentNode) {
-                thinkingElement.parentNode.removeChild(thinkingElement);
+            // 等待一小会儿让用户看到完整的流式效果
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 移除临时的流式元素
+            if (streamingElement && streamingElement.parentNode) {
+                streamingElement.parentNode.removeChild(streamingElement);
             }
 
-            // 直接存储最终的AI响应到数据库
+            // 存储最终的AI响应到数据库，触发SSE推送显示持久化消息
             await this.storeAIResponse(result.response || '抱歉，我无法生成回答。');
 
-            console.log('AIHandler: AI消息处理完成');
+
 
         } catch (error) {
             console.error('AIHandler: AI消息处理失败', error);
@@ -179,7 +175,6 @@ const AIHandler = {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('AIHandler: 思考消息已存储到数据库', result);
 
                 // 触发消息刷新
                 if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
@@ -226,8 +221,6 @@ const AIHandler = {
     
     // 完成思考过程
     completeThinking(thinkingId, thinking) {
-        console.log('AIHandler: 思考过程完成', { thinkingId, thinkingLength: thinking.length });
-        
         // 开始显示AI响应
         this.startAIResponse();
     },
@@ -248,7 +241,6 @@ const AIHandler = {
         };
 
         // 添加到UI
-        console.log('AIHandler: 准备添加响应消息到UI', { responseMessage });
         if (window.UI && typeof UI.addAIMessage === 'function') {
             UI.addAIMessage(responseMessage);
         } else {
@@ -263,34 +255,19 @@ const AIHandler = {
     // 存储AI响应到数据库
     async storeAIResponse(content) {
         try {
-            console.log('AIHandler: 存储AI响应到数据库', { content });
 
-            const response = await fetch('/api/ai/message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                },
-                body: JSON.stringify({
-                    content: content,
-                    deviceId: 'ai-system',
-                    type: 'ai_response'
-                })
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('AIHandler: AI响应已存储到数据库', result);
+            // 使用API模块的sendAIMessage方法
+            if (window.API && typeof API.sendAIMessage === 'function') {
+                const result = await API.sendAIMessage(content, 'ai-system', 'ai_response');
 
                 // 触发消息刷新，显示新的AI响应
                 if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
                     await MessageHandler.loadMessages(true);
                 }
 
-                return result.data.id;
+                return result.id;
             } else {
-                console.error('AIHandler: AI响应存储失败');
-                throw new Error('存储AI响应失败');
+                throw new Error('API.sendAIMessage 方法不可用');
             }
         } catch (error) {
             console.error('AIHandler: 存储AI响应时出错', error);
@@ -306,9 +283,108 @@ const AIHandler = {
         }
     },
 
+    // 创建流式显示的AI消息元素
+    createStreamingAIMessage() {
+
+        const messageList = document.getElementById('messageList');
+        if (!messageList) {
+            console.error('AIHandler: 找不到messageList元素');
+            return null;
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ai fade-in streaming';
+        messageDiv.dataset.messageId = `streaming-${Date.now()}`;
+        messageDiv.innerHTML = `
+            <div class="message-content" style="background: linear-gradient(135deg, #1e90ff, #4169e1); color: white; padding: 12px; border-radius: 8px; position: relative;">
+                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">🤖 AI助手 (实时回复中...)</div>
+                <div class="streaming-content" style="min-height: 20px; line-height: 1.5;">
+                    <span class="typing-cursor" style="animation: blink 1s infinite;">▋</span>
+                </div>
+            </div>
+            <div class="message-meta">
+                <span>AI助手</span>
+                <span class="message-time">${new Date().toLocaleTimeString()}</span>
+            </div>
+        `;
+
+        // 添加打字动画样式
+        if (!document.getElementById('streaming-styles')) {
+            const style = document.createElement('style');
+            style.id = 'streaming-styles';
+            style.textContent = `
+                @keyframes blink {
+                    0%, 50% { opacity: 1; }
+                    51%, 100% { opacity: 0.3; }
+                }
+                .streaming-content {
+                    word-wrap: break-word;
+                    white-space: pre-wrap;
+                }
+                .typing-cursor {
+                    color: rgba(255, 255, 255, 0.8);
+                    font-weight: bold;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        messageList.appendChild(messageDiv);
+        messageList.scrollTop = messageList.scrollHeight;
+
+
+        return messageDiv;
+    },
+
+    // 更新流式消息内容
+    updateStreamingMessage(element, content) {
+        if (!element) return;
+
+        const contentDiv = element.querySelector('.streaming-content');
+        if (contentDiv) {
+            // 移除打字光标
+            const cursor = contentDiv.querySelector('.typing-cursor');
+            if (cursor) cursor.remove();
+
+            // 更新内容
+            contentDiv.textContent = content;
+
+            // 重新添加打字光标
+            const newCursor = document.createElement('span');
+            newCursor.className = 'typing-cursor';
+            newCursor.style.animation = 'blink 1s infinite';
+            newCursor.textContent = '▋';
+            contentDiv.appendChild(newCursor);
+
+            // 滚动到底部
+            const messageList = document.getElementById('messageList');
+            if (messageList) {
+                messageList.scrollTop = messageList.scrollHeight;
+            }
+        }
+    },
+
+    // 完成流式消息
+    completeStreamingMessage(element) {
+        if (!element) return;
+
+        // 移除打字光标
+        const cursor = element.querySelector('.typing-cursor');
+        if (cursor) cursor.remove();
+
+        // 更新标题
+        const header = element.querySelector('.message-content > div:first-child');
+        if (header) {
+            header.textContent = '🤖 AI助手 (回复完成)';
+            header.style.opacity = '0.6';
+        }
+
+        // 添加完成标识
+        element.classList.add('completed');
+    },
+
     // 直接添加消息到DOM（备用方案）
     addMessageDirectly(message) {
-        console.log('AIHandler: 使用备用方案直接添加消息到DOM');
 
         const messageList = document.getElementById('messageList');
         if (!messageList) {
@@ -333,7 +409,7 @@ const AIHandler = {
         messageList.appendChild(messageDiv);
         messageList.scrollTop = messageList.scrollHeight;
 
-        console.log('AIHandler: 消息已直接添加到DOM');
+
         return messageDiv;
     },
     
@@ -346,10 +422,6 @@ const AIHandler = {
     
     // 完成AI响应
     async completeAIResponse(result) {
-        console.log('AIHandler: AI响应完成', {
-            thinkingLength: result.thinking?.length || 0,
-            responseLength: result.response?.length || 0
-        });
 
         try {
             // 将最终的AI响应存储到数据库
@@ -368,7 +440,6 @@ const AIHandler = {
 
             if (response.ok) {
                 const apiResult = await response.json();
-                console.log('AIHandler: AI响应已存储到数据库', apiResult);
 
                 // 触发消息刷新，显示完整的对话
                 if (window.MessageHandler && typeof MessageHandler.loadMessages === 'function') {
@@ -436,8 +507,6 @@ const AIHandler = {
     // 取消当前AI请求
     cancelCurrentRequest() {
         if (this.isProcessing) {
-            console.log('AIHandler: 取消当前AI请求');
-            
             // 取消API请求
             if (window.AIAPI && typeof AIAPI.cancelCurrentRequest === 'function') {
                 AIAPI.cancelCurrentRequest();

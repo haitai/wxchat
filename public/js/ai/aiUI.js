@@ -7,7 +7,6 @@ const AIUI = {
     
     // 初始化AI UI
     init() {
-        console.log('AIUI: 初始化AI UI组件');
         this.bindEvents();
     },
     
@@ -28,8 +27,6 @@ const AIUI = {
     
     // 创建AI消息元素
     createAIMessageElement(message) {
-        console.log('AIUI: 创建AI消息元素', { message });
-
         try {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message ai fade-in';
@@ -38,13 +35,10 @@ const AIUI = {
 
             let content = '';
             if (message.type === CONFIG.MESSAGE_TYPES.AI_THINKING) {
-                console.log('AIUI: 渲染思考消息');
                 content = this.renderThinkingMessage(message);
             } else if (message.type === CONFIG.MESSAGE_TYPES.AI_RESPONSE) {
-                console.log('AIUI: 渲染响应消息');
                 content = this.renderResponseMessage(message);
             } else {
-                console.log('AIUI: 使用简单AI消息渲染');
                 // 降级处理：渲染为普通AI消息
                 content = this.renderSimpleAIMessage(message);
             }
@@ -55,11 +49,6 @@ const AIUI = {
             }
 
             messageDiv.innerHTML = content;
-            console.log('AIUI: AI消息元素创建完成', {
-                messageId: message.id,
-                contentLength: content.length,
-                element: messageDiv
-            });
 
             return messageDiv;
         } catch (error) {
@@ -171,8 +160,6 @@ const AIUI = {
     
     // 更新AI响应内容
     updateResponseContent(responseId, chunk, fullResponse) {
-        console.log('AIUI: 更新AI响应内容', { responseId, chunkLength: chunk?.length, fullLength: fullResponse?.length });
-
         // 尝试多种方式查找响应元素
         let responseElement = document.getElementById(`ai-msg-${responseId}`);
         if (!responseElement) {
@@ -183,8 +170,6 @@ const AIUI = {
         }
 
         if (responseElement) {
-            console.log('AIUI: 找到响应元素，开始更新内容');
-
             // 移除打字指示器
             const typingIndicator = responseElement.querySelector('.ai-typing-indicator');
             if (typingIndicator) {
@@ -219,8 +204,6 @@ const AIUI = {
     
     // 完成AI响应
     completeResponse(responseId, finalContent) {
-        console.log('AIUI: 完成AI响应', { responseId, contentLength: finalContent?.length || 0 });
-
         // 尝试多种方式查找响应元素
         let responseElement = document.getElementById(`ai-msg-${responseId}`);
         if (!responseElement) {
@@ -239,8 +222,6 @@ const AIUI = {
 
             // 添加完成标识
             responseElement.classList.add('ai-response-complete');
-
-            console.log('AIUI: AI响应完成处理成功');
         } else {
             console.warn('AIUI: 未找到响应元素进行完成处理', { responseId });
         }

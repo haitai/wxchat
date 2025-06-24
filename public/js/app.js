@@ -37,16 +37,13 @@ class WeChatApp {
             FileUpload.init();
 
             // 初始化功能组件 - 确保在UI初始化之后
-            console.log('App: 开始初始化功能组件');
             if (typeof FunctionMenu !== 'undefined') {
-                console.log('App: 初始化功能菜单');
                 FunctionMenu.init();
                 // 将组件暴露到全局
                 window.FunctionMenu = FunctionMenu;
             }
 
             if (typeof FunctionButton !== 'undefined') {
-                console.log('App: 初始化功能按钮');
                 FunctionButton.init();
                 // 将组件暴露到全局，供UI模块使用
                 window.FunctionButton = FunctionButton;
@@ -58,22 +55,38 @@ class WeChatApp {
             }
 
             // 初始化AI模块
-            console.log('App: 开始初始化AI模块');
             if (typeof AIUI !== 'undefined') {
-                console.log('App: 初始化AI UI');
                 AIUI.init();
                 window.AIUI = AIUI;
             }
 
             if (typeof AIHandler !== 'undefined') {
-                console.log('App: 初始化AI处理器');
                 const aiInitSuccess = AIHandler.init();
                 if (aiInitSuccess) {
                     window.AIHandler = AIHandler;
-                    console.log('App: AI模块初始化成功');
-                } else {
-                    console.warn('App: AI模块初始化失败，AI功能将不可用');
                 }
+            }
+
+            // 初始化AI图片生成模块
+            if (typeof ImageGenUI !== 'undefined') {
+                ImageGenUI.init();
+                window.ImageGenUI = ImageGenUI;
+            }
+
+            if (typeof ImageGenHandler !== 'undefined') {
+                ImageGenHandler.init();
+                window.ImageGenHandler = ImageGenHandler;
+            }
+
+            // 初始化搜索模块
+            if (typeof SearchUI !== 'undefined') {
+                SearchUI.init();
+                window.SearchUI = SearchUI;
+            }
+
+            if (typeof SearchHandler !== 'undefined') {
+                SearchHandler.init();
+                window.SearchHandler = SearchHandler;
             }
 
             // 设置初始连接状态
@@ -210,8 +223,6 @@ class WeChatApp {
 
     // 处理功能菜单动作
     handleFunctionMenuAction(action, itemId) {
-        console.log(`功能菜单动作: ${action}, 项目ID: ${itemId}`);
-
         // 这里可以根据需要添加更多的功能处理逻辑
         switch (action) {
             case 'quickReply':
@@ -231,7 +242,7 @@ class WeChatApp {
                 this.showSettings();
                 break;
             default:
-                console.log(`未处理的功能: ${action}`);
+                break;
         }
     }
 
@@ -342,6 +353,28 @@ if (typeof AIHandler !== 'undefined') {
     window.AIHandler = AIHandler;
 }
 
+// AI图片生成模块全局导出
+if (typeof ImageGenAPI !== 'undefined') {
+    window.ImageGenAPI = ImageGenAPI;
+}
+if (typeof ImageGenUI !== 'undefined') {
+    window.ImageGenUI = ImageGenUI;
+}
+if (typeof ImageGenHandler !== 'undefined') {
+    window.ImageGenHandler = ImageGenHandler;
+}
+
+// 搜索模块全局导出
+if (typeof SearchAPI !== 'undefined') {
+    window.SearchAPI = SearchAPI;
+}
+if (typeof SearchUI !== 'undefined') {
+    window.SearchUI = SearchUI;
+}
+if (typeof SearchHandler !== 'undefined') {
+    window.SearchHandler = SearchHandler;
+}
+
 // 开发模式下的调试信息
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     console.log('🔧 开发模式已启用');
@@ -356,6 +389,12 @@ if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
         PWA: typeof PWA !== 'undefined' ? PWA : undefined,
         AIAPI: typeof AIAPI !== 'undefined' ? AIAPI : undefined,
         AIUI: typeof AIUI !== 'undefined' ? AIUI : undefined,
-        AIHandler: typeof AIHandler !== 'undefined' ? AIHandler : undefined
+        AIHandler: typeof AIHandler !== 'undefined' ? AIHandler : undefined,
+        ImageGenAPI: typeof ImageGenAPI !== 'undefined' ? ImageGenAPI : undefined,
+        ImageGenUI: typeof ImageGenUI !== 'undefined' ? ImageGenUI : undefined,
+        ImageGenHandler: typeof ImageGenHandler !== 'undefined' ? ImageGenHandler : undefined,
+        SearchAPI: typeof SearchAPI !== 'undefined' ? SearchAPI : undefined,
+        SearchUI: typeof SearchUI !== 'undefined' ? SearchUI : undefined,
+        SearchHandler: typeof SearchHandler !== 'undefined' ? SearchHandler : undefined
     });
 }
