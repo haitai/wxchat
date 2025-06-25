@@ -229,10 +229,23 @@ const API = {
         try {
             const url = `${CONFIG.API.ENDPOINTS.FILES_DOWNLOAD}/${r2Key}`;
 
-            // 使用fetch获取文件，这样可以携带认证头
-            const response = await this.request(url, {
-                method: 'GET'
-            });
+            // 直接使用fetch，不通过request方法，避免response被消费
+            const defaultOptions = {
+                method: 'GET',
+                headers: {}
+            };
+
+            // 添加认证头
+            const authHeaders = Auth ? Auth.addAuthHeader(defaultOptions.headers) : defaultOptions.headers;
+
+            const config = {
+                ...defaultOptions,
+                headers: {
+                    ...authHeaders
+                }
+            };
+
+            const response = await fetch(url, config);
 
             if (!response.ok) {
                 throw new Error(`下载失败: ${response.status} ${response.statusText}`);
@@ -301,10 +314,23 @@ const API = {
         try {
             const url = `${CONFIG.API.ENDPOINTS.FILES_DOWNLOAD}/${r2Key}`;
 
-            // 使用fetch获取图片，携带认证头
-            const response = await this.request(url, {
-                method: 'GET'
-            });
+            // 直接使用fetch，不通过request方法，避免response被消费
+            const defaultOptions = {
+                method: 'GET',
+                headers: {}
+            };
+
+            // 添加认证头
+            const authHeaders = Auth ? Auth.addAuthHeader(defaultOptions.headers) : defaultOptions.headers;
+
+            const config = {
+                ...defaultOptions,
+                headers: {
+                    ...authHeaders
+                }
+            };
+
+            const response = await fetch(url, config);
 
             if (!response.ok) {
                 throw new Error(`获取图片失败: ${response.status}`);
