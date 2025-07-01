@@ -108,29 +108,67 @@
     }
 
     .message {
-        max-width: 92%;
-        margin-bottom: 0.5rem;
-        padding: 0 0.25rem;
+        max-width: 88%; /* 稍微减小最大宽度，确保在小屏幕上有足够边距 */
+        margin-bottom: 0.75rem; /* 增加消息间距 */
+        padding: 0 0.5rem; /* 增加水平内边距 */
+        /* 确保消息容器有最小宽度 */
+        min-width: 120px;
     }
 
     .message-content {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.95rem;
-        border-radius: 0.5rem;
+        padding: 0.5rem 0.75rem; /* 减少内边距，更紧凑 */
+        font-size: 1rem !important; /* 确保字体大小足够 */
+        border-radius: 0.5rem; /* 保持适中的圆角 */
+        /* 确保内容容器有最小高度 */
+        min-height: 2rem; /* 减少最小高度 */
+        /* 改善文字渲染 */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        /* 确保文字布局 */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* 强化移动端换行设置 */
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        /* 确保容器不会超出父元素 */
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        /* 防止内容溢出 */
+        overflow: hidden !important;
+        /* 优化行高 */
+        line-height: 1.4 !important;
     }
 
     /* 手机设备上的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
-        padding: 0;
-        margin: 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.25rem 0 !important; /* 减少垂直内边距，更紧凑 */
+        margin: 0 !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
+        font-size: 1rem !important; /* 确保字体大小足够 */
+        line-height: 1.4 !important; /* 优化行高 */
+        min-height: 1.2em !important; /* 减少最小高度 */
+        display: block !important;
+        /* 移动端强化换行设置 */
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        /* 确保长URL和字符串换行 */
+        hyphens: auto !important;
+        /* 确保宽度限制 */
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.3rem 24px 0.3rem 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.25rem 24px 0.25rem 0 !important; /* 减少内边距 */
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
+        font-size: 1rem !important;
+        line-height: 1.4 !important; /* 优化行高 */
     }
 
     .message-meta {
@@ -227,22 +265,44 @@
     }
     
     .message-content {
-        padding: 0.625rem 0.75rem;
-        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem; /* 减少内边距，更紧凑 */
+        font-size: 0.95rem !important; /* 确保字体不会太小 */
+        /* 确保在超小屏幕上也有足够的最小高度 */
+        min-height: 1.8rem; /* 减少最小高度 */
+        /* 改善布局 */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        /* 优化行高 */
+        line-height: 1.4 !important;
     }
 
     /* 超小屏幕的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
-        padding: 0;
-        margin: 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.2rem 0 !important; /* 进一步减少内边距 */
+        margin: 0 !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
+        font-size: 0.95rem !important; /* 稍微减小字体但保持可读性 */
+        line-height: 1.4 !important; /* 优化行高 */
+        min-height: 1.2em !important; /* 减少最小高度 */
+        display: block !important;
+        /* 超小屏幕强化换行设置 */
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+        hyphens: auto !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.25rem 20px 0.25rem 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.2rem 20px 0.2rem 0 !important; /* 减少内边距 */
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
+        font-size: 0.95rem !important;
+        line-height: 1.4 !important; /* 优化行高 */
     }
     
     .file-name {
@@ -403,16 +463,17 @@ body.keyboard-open .message-list {
 
     /* 高分辨率屏幕的文本消息优化 */
     .message-content .text-message:not(.markdown-rendered) {
-        padding: 0;
-        margin: 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.5rem 0 !important; /* 保持一致的内边距 */
+        margin: 0 !important;
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
+        display: block !important;
     }
 
     .message-content .text-message.markdown-rendered {
-        padding: 0.375rem 28px 0.375rem 0;
-        font-weight: 400;
-        letter-spacing: 0.01em;
+        padding: 0.5rem 28px 0.5rem 0 !important; /* 统一内边距 */
+        font-weight: 400 !important;
+        letter-spacing: 0.01em !important;
     }
 }
 
