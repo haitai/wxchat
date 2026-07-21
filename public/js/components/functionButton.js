@@ -1,205 +1,93 @@
-// 功能按钮组件 - 微信风格动态输入功能
-// 实现输入框为空时显示的圆形加号按钮
-
+/**
+ * 输入区按钮编排：表情 / + / 搜索 / 更多
+ */
 const FunctionButton = {
-    // 组件状态
-    isVisible: true,
-    isMenuOpen: false,
-    
-    // DOM 元素引用
-    elements: {
-        functionButton: null,
-        functionMenu: null
-    },
+  init() {
+    const plusBtn = document.getElementById('functionButton');
+    const emojiBtn = document.getElementById('emojiButton');
+    const searchBtn = document.getElementById('searchNavBtn');
+    const moreBtn = document.getElementById('moreNavBtn');
+    const ta = document.getElementById('messageText');
 
-    // 初始化功能按钮
-    init() {
-        // 确保DOM已加载
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                this.doInit();
-            });
-        } else {
-            this.doInit();
-        }
-    },
+    plusBtn?.addEventListener('click', () => {
+      FunctionMenu.toggle();
+    });
 
-    // 执行实际初始化
-    doInit() {
-        this.cacheElements();
-        this.bindEvents();
-        this.updateVisibility();
-    },
+    emojiBtn?.addEventListener('click', () => {
+      EmojiPanel.toggle();
+    });
 
-    // 缓存DOM元素
-    cacheElements() {
-        this.elements.functionButton = document.getElementById('functionButton');
-        this.elements.functionMenu = document.getElementById('functionMenu');
+    searchBtn?.addEventListener('click', () => {
+      this.closePanels();
+      window.SearchUI?.showSearchModal?.();
+    });
 
-        // 检查关键元素是否存在
-        if (!this.elements.functionButton) {
-            console.error('FunctionButton: 找不到功能按钮元素 #functionButton');
-        }
-    },
+    moreBtn?.addEventListener('click', () => {
+      this.closePanels();
+      this.showMoreSheet();
+    });
 
-    // 绑定事件
-    bindEvents() {
-        if (this.elements.functionButton) {
-            // 点击功能按钮显示菜单
-            this.elements.functionButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.toggleMenu();
-            });
-        } else {
-            console.error('FunctionButton: 无法绑定事件，按钮元素不存在');
-        }
+    document.getElementById('aiModeCloseBtn')?.addEventListener('click', () => {
+      if (window.AIHandler?.isAIMode) AIHandler.toggleAIMode();
+    });
 
-        // 点击其他地方关闭菜单
-        document.addEventListener('click', (e) => {
-            if (this.isMenuOpen && !this.isClickInsideMenu(e.target)) {
-                this.hideMenu();
-            }
-        });
+    // 聚焦输入时收起面板（更像微信）
+    ta?.addEventListener('focus', () => {
+      // 轻微延迟，避免点按钮时抢焦点
+      setTimeout(() => {
+        if (document.activeElement === ta) this.closePanels();
+      }, 50);
+    });
 
-        // ESC键关闭菜单
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isMenuOpen) {
-                this.hideMenu();
-            }
-        });
-    },
+    // 点击消息列表收起
+    document.getElementById('messageList')?.addEventListener('click', () => {
+      this.closePanels();
+    });
 
-    // 检查点击是否在菜单内
-    isClickInsideMenu(target) {
-        return this.elements.functionMenu && 
-               (this.elements.functionMenu.contains(target) || 
-                this.elements.functionButton.contains(target));
-    },
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closePanels();
+    });
 
-    // 显示功能按钮
-    show() {
-        if (!this.elements.functionButton) return;
-        
-        this.isVisible = true;
-        this.elements.functionButton.classList.remove('hide');
-        this.elements.functionButton.classList.add('show');
-    },
+    return true;
+  },
 
-    // 隐藏功能按钮
-    hide() {
-        if (!this.elements.functionButton) return;
-        
-        this.isVisible = false;
-        this.elements.functionButton.classList.remove('show');
-        this.elements.functionButton.classList.add('hide');
-        
-        // 如果菜单是打开的，也要关闭
-        if (this.isMenuOpen) {
-            this.hideMenu();
-        }
-    },
+  closePanels() {
+    FunctionMenu?.hide?.();
+    EmojiPanel?.hide?.();
+  },
 
-    // 更新可见性（根据输入框状态）
-    updateVisibility() {
-        const messageText = document.getElementById('messageText');
-        if (!messageText) {
-            console.warn('FunctionButton: 找不到输入框元素');
-            return;
-        }
-
-        const hasContent = messageText.value.trim().length > 0;
-
-        if (hasContent) {
-            this.hide();
-        } else {
-            this.show();
-        }
-    },
-
-    // 切换菜单显示状态
-    toggleMenu() {
-
-        // 确保功能菜单已初始化
-        if (!this.elements.functionMenu && window.FunctionMenu) {
-            this.elements.functionMenu = document.getElementById('functionMenu');
-        }
-
-        if (this.isMenuOpen) {
-            this.hideMenu();
-        } else {
-            this.showMenu();
-        }
-    },
-
-    // 显示功能菜单
-    showMenu() {
-        // 如果菜单元素不存在，先初始化菜单
-        if (!this.elements.functionMenu && window.FunctionMenu) {
-            window.FunctionMenu.init();
-            this.elements.functionMenu = document.getElementById('functionMenu');
-        }
-
-        if (!this.elements.functionMenu) {
-            return;
-        }
-
-        if (this.isMenuOpen) return;
-
-        this.isMenuOpen = true;
-        this.elements.functionMenu.classList.add('show');
-
-        // 添加动画效果
-        requestAnimationFrame(() => {
-            this.elements.functionMenu.classList.add('animate-in');
-        });
-
-        // 触发自定义事件
-        this.dispatchEvent('menuOpen');
-    },
-
-    // 隐藏功能菜单
-    hideMenu() {
-        if (!this.elements.functionMenu || !this.isMenuOpen) return;
-
-        this.isMenuOpen = false;
-        this.elements.functionMenu.classList.remove('animate-in');
-        
-        // 等待动画完成后隐藏
-        setTimeout(() => {
-            if (!this.isMenuOpen) { // 确保在动画期间没有重新打开
-                this.elements.functionMenu.classList.remove('show');
-            }
-        }, 200);
-
-        // 触发自定义事件
-        this.dispatchEvent('menuClose');
-    },
-
-    // 分发自定义事件
-    dispatchEvent(eventName, detail = {}) {
-        const event = new CustomEvent(`functionButton:${eventName}`, {
-            detail: { ...detail, component: this }
-        });
-        document.dispatchEvent(event);
-    },
-
-    // 获取当前状态
-    getState() {
-        return {
-            isVisible: this.isVisible,
-            isMenuOpen: this.isMenuOpen
-        };
-    },
-
-    // 重置组件状态
-    reset() {
-        this.hideMenu();
-        this.updateVisibility();
-    }
+  showMoreSheet() {
+    // 简易更多菜单：设备信息 / 登出
+    document.querySelector('.context-menu')?.remove();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.style.right = '12px';
+    menu.style.left = 'auto';
+    menu.style.top = `calc(var(--safe-top) + var(--nav-height) + 8px)`;
+    menu.innerHTML = `
+      <button type="button" class="context-menu-item" data-act="search">搜索聊天记录</button>
+      <button type="button" class="context-menu-item" data-act="pwa">安装应用</button>
+      <button type="button" class="context-menu-item" data-act="clear">清理数据</button>
+      <button type="button" class="context-menu-item danger" data-act="logout">退出登录</button>
+    `;
+    menu.addEventListener('click', (e) => {
+      const act = e.target.dataset?.act;
+      if (!act) return;
+      menu.remove();
+      if (act === 'search') SearchUI?.showSearchModal?.();
+      if (act === 'pwa') PWA?.promptInstall?.();
+      if (act === 'clear') MessageHandler.handleClearCommand();
+      if (act === 'logout') Auth.logout();
+    });
+    document.body.appendChild(menu);
+    const close = (ev) => {
+      if (!menu.contains(ev.target) && ev.target !== document.getElementById('moreNavBtn')) {
+        menu.remove();
+        document.removeEventListener('pointerdown', close, true);
+      }
+    };
+    setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
+  }
 };
 
-// 导出组件（如果使用模块系统）
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = FunctionButton;
-}
+if (typeof window !== 'undefined') window.FunctionButton = FunctionButton;

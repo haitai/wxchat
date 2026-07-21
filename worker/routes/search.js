@@ -1,142 +1,146 @@
-﻿import { Hono } from 'hono'
+import { Hono } from 'hono'
+import { ok, fail } from '../middleware/errorHandler.js'
 
 const search = new Hono()
 
-// 文件类型MIME映射
 const FILE_TYPE_MAP = {
-  'image': ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/svg+xml', 'image/webp'],
-  'video': ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/mkv', 'video/flv', 'video/webm'],
-  'audio': ['audio/mp3', 'audio/wav', 'audio/aac', 'audio/flac', 'audio/ogg', 'audio/m4a'],
-  'document': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-  'archive': ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'],
-  'text': ['text/plain', 'text/html', 'text/css', 'text/javascript', 'text/markdown'],
-  'code': ['application/javascript', 'application/json', 'application/xml']
+  image: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/svg+xml', 'image/webp', 'image/heic'],
+  video: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/mkv', 'video/flv', 'video/webm'],
+  audio: ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/aac', 'audio/flac', 'audio/ogg', 'audio/m4a'],
+  document: [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ],
+  archive: ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar', 'application/gzip'],
+  text: ['text/plain', 'text/html', 'text/css', 'text/javascript', 'text/markdown', 'text/csv'],
+  code: ['application/javascript', 'application/json', 'application/xml']
 }
 
-// 搜索功能 - 多条件搜索
+function escapeLike(q) {
+  return String(q).replace(/[\\%_]/g, (ch) => `\\${ch}`)
+}
+
 search.get('/', async (c) => {
   try {
     const { DB } = c.env
-    const query = c.req.query('q')
+    const query = (c.req.query('q') || '').trim()
     const type = c.req.query('type') || 'all'
     const timeRange = c.req.query('timeRange') || 'all'
     const deviceId = c.req.query('deviceId') || 'all'
     const fileType = c.req.query('fileType') || 'all'
-    const limit = Math.min(parseInt(c.req.query('limit') || '100'), 200)
-    const offset = parseInt(c.req.query('offset') || '0')
+    const limit = Math.min(parseInt(c.req.query('limit') || '100', 10), 200)
+    const offset = Math.max(parseInt(c.req.query('offset') || '0', 10), 0)
 
-    if (!query || query.trim().length === 0) {
-      return c.json({ success: false, error: '搜索关键词不能为空' }, 400)
+    if (!query) {
+      return fail(c, { message: '搜索关键词不能为空', status: 400, code: 'EMPTY_QUERY' })
     }
 
-    const whereConditions = []
-    const params = []
-    let needsFileJoin = false
+    const like = `%${escapeLike(query)}%`
+    const textMatch = `(m.content LIKE ? ESCAPE '\\' AND m.type IN ('text','ai','system'))`
+    const fileMatch = `(f.original_name LIKE ? ESCAPE '\\' AND m.type = 'file')`
 
-    // 文本搜索
+    // 匹配条件：文本 OR 文件名（按 type 过滤）
+    const matchParts = []
+    const matchParams = []
     if (type === 'all' || type === 'text') {
-      whereConditions.push(`(m.content LIKE ? AND m.type = 'text')`)
-      params.push(`%${query}%`)
+      matchParts.push(textMatch)
+      matchParams.push(like)
     }
-
-    // 文件搜索
     if (type === 'all' || type === 'file') {
-      needsFileJoin = true
-      whereConditions.push(`(f.original_name LIKE ? AND m.type = 'file')`)
-      params.push(`%${query}%`)
+      matchParts.push(fileMatch)
+      matchParams.push(like)
+    }
+    if (matchParts.length === 0) {
+      return fail(c, { message: '无效的搜索类型', status: 400, code: 'BAD_TYPE' })
     }
 
-    // 时间范围
+    // 过滤条件全部 AND
+    const filters = []
+    const filterParams = []
+
     if (timeRange !== 'all') {
       const timeMap = {
-        'today': `m.timestamp >= date('now', 'start of day')`,
-        'yesterday': `m.timestamp >= date('now', '-1 day', 'start of day') AND m.timestamp < date('now', 'start of day')`,
-        'week': `m.timestamp >= date('now', '-7 days')`,
-        'month': `m.timestamp >= date('now', '-30 days')`
+        today: `m.timestamp >= datetime('now', 'start of day')`,
+        yesterday: `m.timestamp >= datetime('now', '-1 day', 'start of day') AND m.timestamp < datetime('now', 'start of day')`,
+        week: `m.timestamp >= datetime('now', '-7 days')`,
+        month: `m.timestamp >= datetime('now', '-30 days')`
       }
-      if (timeMap[timeRange]) {
-        whereConditions.push(timeMap[timeRange])
-      }
+      if (timeMap[timeRange]) filters.push(`(${timeMap[timeRange]})`)
     }
 
-    // 设备过滤
     if (deviceId !== 'all') {
-      whereConditions.push('m.device_id = ?')
-      params.push(deviceId)
+      filters.push('m.device_id = ?')
+      filterParams.push(deviceId)
     }
 
-    // 文件类型过滤
+    let needsFileJoin = type === 'all' || type === 'file' || fileType !== 'all'
     if (fileType !== 'all' && (type === 'all' || type === 'file')) {
       needsFileJoin = true
       const mimeTypes = FILE_TYPE_MAP[fileType] || []
       if (mimeTypes.length > 0) {
-        const mimeConditions = mimeTypes.map(() => 'f.mime_type = ?').join(' OR ')
-        whereConditions.push(`(${mimeConditions})`)
-        params.push(...mimeTypes)
+        filters.push(`(f.mime_type IN (${mimeTypes.map(() => '?').join(',')}))`)
+        filterParams.push(...mimeTypes)
       }
     }
 
-    if (whereConditions.length === 0) {
-      return c.json({ success: false, error: '无效的搜索条件' }, 400)
-    }
+    const where = `WHERE (${matchParts.join(' OR ')})` +
+      (filters.length ? ` AND ${filters.join(' AND ')}` : '')
+    const joinClause = needsFileJoin ? 'LEFT JOIN files f ON m.file_id = f.id' : 'LEFT JOIN files f ON m.file_id = f.id'
 
-    const joinClause = needsFileJoin ? 'LEFT JOIN files f ON m.file_id = f.id' : ''
-    const whereClause = `WHERE ${whereConditions.join(' OR ')}`
     const selectFields = `
-      m.id, m.type, m.content, m.device_id, m.timestamp,
+      m.id, m.type, m.content, m.device_id, m.timestamp, m.meta,
       f.original_name, f.file_size, f.mime_type, f.r2_key
     `
-    const countParams = [...params]
-    const dataParams = [...params, limit, offset]
 
+    const baseParams = [...matchParams, ...filterParams]
     const [countResult, dataResult] = await Promise.all([
-      DB.prepare(`SELECT COUNT(DISTINCT m.id) as total FROM messages m ${joinClause} ${whereClause}`)
-        .bind(...countParams).first(),
-      DB.prepare(`SELECT ${selectFields} FROM messages m ${joinClause} ${whereClause} ORDER BY m.timestamp DESC LIMIT ? OFFSET ?`)
-        .bind(...dataParams).all()
+      DB.prepare(`SELECT COUNT(DISTINCT m.id) as total FROM messages m ${joinClause} ${where}`)
+        .bind(...baseParams).first(),
+      DB.prepare(
+        `SELECT ${selectFields} FROM messages m ${joinClause} ${where}
+         ORDER BY m.timestamp DESC LIMIT ? OFFSET ?`
+      ).bind(...baseParams, limit, offset).all()
     ])
 
     return c.json({
       success: true,
       data: dataResult.results || [],
-      total: countResult.total || 0,
-      limit, offset,
+      total: countResult?.total || 0,
+      limit,
+      offset,
       query: { q: query, type, timeRange, deviceId, fileType }
     })
   } catch (error) {
-    console.error('[Search] 搜索失败:', error)
-    return c.json({ success: false, error: `搜索失败: ${error.message}` }, 500)
+    console.error('[Search] 失败:', error)
+    return fail(c, error)
   }
 })
 
-// 搜索建议接口
 search.get('/suggestions', async (c) => {
   try {
     const { DB } = c.env
-    const query = c.req.query('q')
-
-    if (!query || query.trim().length < 2) {
-      return c.json({ success: true, data: [] })
+    const query = (c.req.query('q') || '').trim()
+    if (query.length < 2) {
+      return ok(c, [])
     }
-
-    // 使用子查询避免别名在WHERE中失效
-    const stmt = DB.prepare(`
+    const like = `%${escapeLike(query)}%`
+    const result = await DB.prepare(`
       SELECT DISTINCT substr(m.content, 1, 50) as suggestion
       FROM messages m
-      WHERE m.type = 'text' AND m.content LIKE ?
+      WHERE m.type IN ('text','ai') AND m.content LIKE ? ESCAPE '\\'
       ORDER BY m.timestamp DESC
       LIMIT 10
-    `)
+    `).bind(like).all()
 
-    const result = await stmt.bind(`%${query}%`).all()
-
-    return c.json({
-      success: true,
-      data: result.results?.map(row => row.suggestion).filter(Boolean) || []
-    })
+    return ok(c, (result.results || []).map((r) => r.suggestion).filter(Boolean))
   } catch (error) {
-    console.error('[Search] 搜索建议失败:', error)
-    return c.json({ success: true, data: [] })
+    console.error('[Search] 建议失败:', error)
+    return ok(c, [])
   }
 })
 

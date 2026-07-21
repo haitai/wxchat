@@ -1,312 +1,282 @@
-﻿// UI 操作和渲染 - 重构版：补ensureTopLoadingIndicator，修滚动清理
-
+/**
+ * UI 主模块 v2
+ */
 const UI = {
-    // DOM 元素缓存
-    elements: {},
+  elements: {},
+  messageCache: new Map(),
+  lastDateLabel: null,
 
-    // 消息缓存（用于增量更新）
-    messageCache: new Map(),
+  init() {
+    this.cacheElements();
+    this.bindEvents();
+    this.checkInputAndToggleSendButton();
+  },
 
-    // 初始化UI
-    init() {
-        this.cacheElements();
-        this.bindEvents();
-    },
-    
-    // 缓存DOM元素
-    cacheElements() {
-        this.elements = {
-            messageList: document.getElementById('messageList'),
-            messageForm: document.getElementById('messageForm'),
-            messageText: document.getElementById('messageText'),
-            sendButton: document.getElementById('sendButton'),
-            functionButton: document.getElementById('functionButton'),
-            fileInput: document.getElementById('fileInput'),
-            uploadStatus: document.getElementById('uploadStatus'),
-            progressBar: document.getElementById('progressBar'),
-            fileButton: document.getElementById('fileButton')
-        };
-    },
-    
-    // 绑定事件
-    bindEvents() {
-        this.elements.messageText.addEventListener('input', () => {
-            this.autoResizeTextarea();
-            this.checkInputAndToggleSendButton();
-        });
+  cacheElements() {
+    this.elements = {
+      messageList: document.getElementById('messageList'),
+      messageForm: document.getElementById('messageForm'),
+      messageText: document.getElementById('messageText'),
+      sendButton: document.getElementById('sendButton'),
+      functionButton: document.getElementById('functionButton'),
+      fileInput: document.getElementById('fileInput'),
+      imageInput: document.getElementById('imageInput'),
+      cameraInput: document.getElementById('cameraInput'),
+      uploadStatus: document.getElementById('uploadStatus'),
+      progressBar: document.getElementById('progressBar'),
+      fileButton: document.getElementById('fileButton'),
+      connectionBar: document.getElementById('connectionBar'),
+      navStatusDot: document.getElementById('navStatusDot'),
+      aiModeBar: document.getElementById('aiModeBar')
+    };
+  },
 
-        this.elements.messageText.addEventListener('paste', () => {
-            setTimeout(() => this.checkInputAndToggleSendButton(), 10);
-        });
+  bindEvents() {
+    const ta = this.elements.messageText;
+    if (!ta) return;
 
-        this.elements.messageText.addEventListener('cut', () => {
-            setTimeout(() => this.checkInputAndToggleSendButton(), 10);
-        });
+    ta.addEventListener('input', () => {
+      this.autoResizeTextarea();
+      this.checkInputAndToggleSendButton();
+    });
+    ta.addEventListener('paste', () => {
+      setTimeout(() => this.checkInputAndToggleSendButton(), 10);
+    });
+    ta.addEventListener('cut', () => {
+      setTimeout(() => this.checkInputAndToggleSendButton(), 10);
+    });
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        MessageHandler.sendMessage();
+      }
+    });
+  },
 
-        this.elements.messageText.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                MessageHandler.sendMessage();
-            }
-        });
+  autoResizeTextarea() {
+    const ta = this.elements.messageText;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+  },
 
-        this.checkInputAndToggleSendButton();
-    },
-    
-    // 自动调整文本框高度
-    autoResizeTextarea() {
-        const textarea = this.elements.messageText;
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-    },
-    
-    // 获取消息容器
-    getMessageContainer() {
-        return this.elements.messageList;
-    },
+  getInputValue() {
+    return this.elements.messageText?.value?.trim() || '';
+  },
 
-    // 获取输入框内容
-    getInputValue() {
-        return this.elements.messageText ? this.elements.messageText.value.trim() : '';
-    },
-
-    // 清空输入框
-    clearInput() {
-        if (this.elements.messageText) {
-            this.elements.messageText.value = '';
-            this.autoResizeTextarea();
-            this.checkInputAndToggleSendButton();
-        }
-    },
-
-    // 检查是否在底部
-    isAtBottom() {
-        const container = this.elements.messageList;
-        if (!container) return true;
-        const threshold = 100;
-        return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-    },
-
-    // 滚动到底部
-    scrollToBottom(smooth = true) {
-        const container = this.elements.messageList;
-        if (!container) return;
-        container.scrollTo({
-            top: container.scrollHeight,
-            behavior: smooth ? 'smooth' : 'auto'
-        });
-    },
-    
-    // 显示加载状态
-    showLoading(message = '加载中...') {
-        this.elements.messageList.innerHTML = `
-            <div class="loading">
-                <div class="loading-spinner">⏳</div>
-                <span>${message}</span>
-            </div>
-        `;
-    },
-    
-    // 显示空状态
-    showEmpty(message = '还没有消息，开始聊天吧！') {
-        this.elements.messageList.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">💬</div>
-                <p>${message}</p>
-            </div>
-        `;
-    },
-    
-    // 确保顶部加载指示器存在（修复之前调用了未定义函数的问题）
-    ensureTopLoadingIndicator() {
-        const container = this.elements.messageList;
-        if (!container) return;
-        let indicator = container.querySelector('.top-loading-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.className = 'top-loading-indicator';
-            indicator.style.cssText = 'display:none;text-align:center;padding:8px;font-size:12px;color:var(--color-gray-400)';
-            indicator.textContent = '加载更多...';
-            container.insertBefore(indicator, container.firstChild);
-        }
-        return indicator;
-    },
-
-    // 显示/隐藏顶部加载指示器
-    showTopLoadingIndicator(show) {
-        const indicator = this.ensureTopLoadingIndicator();
-        if (indicator) {
-            indicator.style.display = show ? 'block' : 'none';
-        }
-    },
-    
-    // 渲染消息列表（增量更新）
-    renderMessages(messages, forceScroll = false) {
-        if (!messages || messages.length === 0) {
-            this.showEmpty();
-            this.messageCache.clear();
-            return;
-        }
-
-        const wasAtBottom = this.isAtBottom();
-
-        // 确保顶部加载指示器存在
-        this.ensureTopLoadingIndicator();
-
-        // 执行增量更新
-        this.updateMessagesIncremental(messages);
-
-        // 只有在用户原本在底部或强制滚动时才滚动到底部
-        if (wasAtBottom || forceScroll) {
-            this.scrollToBottom();
-        }
-    },
-
-    // 增量更新消息列表
-    updateMessagesIncremental(messages) {
-        const messageContainer = this.elements.messageList;
-        if (!messageContainer) return;
-
-        // 如果是空状态，清空并重新开始
-        if (messageContainer.querySelector('.empty-state')) {
-            messageContainer.innerHTML = '';
-            this.messageCache.clear();
-        }
-
-        // 确保顶部加载指示器存在
-        this.ensureTopLoadingIndicator();
-
-        // 创建新的消息ID集合
-        const newMessageIds = new Set(messages.map(msg => msg.id));
-
-        // 移除不存在的消息
-        this.messageCache.forEach((element, messageId) => {
-            if (!newMessageIds.has(messageId)) {
-                element.remove();
-                this.messageCache.delete(messageId);
-            }
-        });
-
-        // 批量处理新消息
-        const fragment = document.createDocumentFragment();
-        const newElements = [];
-        const currentDeviceId = Utils.getDeviceId();
-
-        messages.forEach((message) => {
-            if (!this.messageCache.has(message.id)) {
-                const messageElement = this.createMessageElement(message, currentDeviceId);
-                fragment.appendChild(messageElement);
-                this.messageCache.set(message.id, messageElement);
-                newElements.push(messageElement);
-            }
-        });
-
-        if (fragment.children.length > 0) {
-            messageContainer.appendChild(fragment);
-        }
-
-        // 加载需要图片的消息
-        requestAnimationFrame(() => {
-            messages.forEach(message => {
-                if (message._needsImageLoad) {
-                    const { r2Key, safeId } = message._needsImageLoad;
-                    ImageLoader.load(r2Key, safeId);
-                }
-            });
-        });
-
-        // 批量添加淡入动画
-        if (newElements.length > 0) {
-            requestAnimationFrame(() => {
-                newElements.forEach(element => element.classList.add('fade-in'));
-            });
-        }
-    },
-    
-    // 创建消息DOM元素（委托给 MessageRenderer）
-    createMessageElement(message, currentDeviceId) {
-        return MessageRenderer.createMessageElement(message, currentDeviceId);
-    },
-    
-    // 添加新消息到列表（增量方式）
-    addMessage(message) {
-        const wasAtBottom = this.isAtBottom();
-
-        if (this.elements.messageList.querySelector('.empty-state')) {
-            this.elements.messageList.innerHTML = '';
-            this.messageCache.clear();
-        }
-
-        if (this.messageCache.has(message.id)) return;
-
-        const currentDeviceId = Utils.getDeviceId();
-        const messageElement = this.createMessageElement(message, currentDeviceId);
-
-        this.elements.messageList.appendChild(messageElement);
-        this.messageCache.set(message.id, messageElement);
-
-        if (message._needsImageLoad) {
-            requestAnimationFrame(() => {
-                ImageLoader.load(message._needsImageLoad.r2Key, message._needsImageLoad.safeId);
-            });
-        }
-
-        requestAnimationFrame(() => messageElement.classList.add('fade-in'));
-
-        if (wasAtBottom) this.scrollToBottom();
-    },
-
-    // 添加AI消息到列表
-    addAIMessage(message) {
-        this.addMessage(message);
-    },
-
-    // 设置发送按钮状态
-    setSendButtonState(loading, disabled) {
-        const btn = this.elements.sendButton;
-        if (!btn) return;
-        btn.disabled = disabled;
-        btn.innerHTML = loading ? '⏳' : '发送';
-    },
-
-    // 设置连接状态
-    setConnectionStatus(status) {
-        const statusEl = document.getElementById('connectionStatus');
-        if (!statusEl) return;
-
-        const statusMap = {
-            'connected': { className: 'online', text: '已连接' },
-            'disconnected': { className: 'offline', text: '连接断开' },
-            'reconnecting': { className: 'reconnecting', text: '重连中...' },
-            'connecting': { className: 'connecting', text: '连接中...' },
-            'offline': { className: 'offline', text: '离线模式' }
-        };
-
-        const s = statusMap[status] || statusMap.disconnected;
-        statusEl.className = `connection-status ${s.className}`;
-        statusEl.textContent = s.text;
-        statusEl.classList.add('show');
-    },
-
-    // 显示成功通知
-    showSuccess(message) {
-        Utils.showNotification(message, 'success');
-    },
-
-    // 显示错误通知
-    showError(message) {
-        Utils.showNotification(message, 'error');
-    },
-
-    // 检查输入并切换发送按钮
-    checkInputAndToggleSendButton() {
-        const input = this.elements.messageText;
-        const sendBtn = this.elements.sendButton;
-        const funcBtn = this.elements.functionButton;
-        if (!input || !sendBtn || !funcBtn) return;
-
-        const hasText = input.value.trim().length > 0;
-        sendBtn.classList.toggle('show', hasText);
-        funcBtn.classList.toggle('show', !hasText);
+  clearInput() {
+    if (this.elements.messageText) {
+      this.elements.messageText.value = '';
+      this.autoResizeTextarea();
+      this.checkInputAndToggleSendButton();
     }
+  },
+
+  focusInput() {
+    this.elements.messageText?.focus();
+  },
+
+  checkInputAndToggleSendButton() {
+    const hasText = !!this.getInputValue();
+    const send = this.elements.sendButton;
+    const plus = this.elements.functionButton;
+    if (send) send.classList.toggle('show', hasText);
+    if (plus) plus.classList.toggle('hidden-btn', hasText);
+  },
+
+  setConnectionStatus(status) {
+    const dot = this.elements.navStatusDot;
+    const bar = this.elements.connectionBar;
+    if (dot) {
+      dot.className = 'nav-status-dot';
+      if (status === 'connected' || status === 'online') dot.classList.add('online');
+      else if (status === 'connecting' || status === 'reconnecting') dot.classList.add('connecting');
+      else dot.classList.add('offline');
+    }
+    if (bar) {
+      if (status === 'connected' || status === 'online') {
+        bar.classList.remove('show', 'offline', 'connecting');
+        bar.textContent = '';
+      } else if (status === 'connecting' || status === 'reconnecting') {
+        bar.className = 'connection-bar connecting show';
+        bar.textContent = '正在连接...';
+      } else {
+        bar.className = 'connection-bar offline show';
+        bar.textContent = '连接已断开，正在重试';
+      }
+    }
+  },
+
+  showUploadStatus(show, text = '正在上传...', percent = 0) {
+    const el = this.elements.uploadStatus;
+    const bar = this.elements.progressBar;
+    const label = document.getElementById('uploadStatusText');
+    if (!el) return;
+    el.classList.toggle('show', !!show);
+    if (label) label.textContent = text;
+    if (bar) bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  },
+
+  updateAIMode(active) {
+    this.elements.aiModeBar?.classList.toggle('active', !!active);
+    const ta = this.elements.messageText;
+    if (ta) ta.placeholder = active ? '向 AI 提问...' : '发送消息...';
+  },
+
+  isNearBottom(threshold = 120) {
+    const list = this.elements.messageList;
+    if (!list) return true;
+    return list.scrollHeight - list.scrollTop - list.clientHeight < threshold;
+  },
+
+  scrollToBottom(force = false) {
+    const list = this.elements.messageList;
+    if (!list) return;
+    if (force || this.isNearBottom()) {
+      requestAnimationFrame(() => {
+        list.scrollTop = list.scrollHeight;
+      });
+    }
+  },
+
+  ensureTopLoadingIndicator(show) {
+    const list = this.elements.messageList;
+    if (!list) return;
+    let el = list.querySelector('.top-loading');
+    if (show) {
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'top-loading';
+        el.innerHTML = `<div class="spinner"></div><span>加载历史消息...</span>`;
+        list.insertBefore(el, list.firstChild);
+      }
+    } else {
+      el?.remove();
+    }
+  },
+
+  clearMessages() {
+    if (this.elements.messageList) this.elements.messageList.innerHTML = '';
+    this.messageCache.clear();
+    this.lastDateLabel = null;
+  },
+
+  renderMessages(messages, { prepend = false, currentDeviceId } = {}) {
+    const list = this.elements.messageList;
+    if (!list) return;
+    const deviceId = currentDeviceId || Utils.getDeviceId();
+    const frag = document.createDocumentFragment();
+    const pendingImages = [];
+
+    let prevDate = prepend ? null : this.lastDateLabel;
+    // prepend 时 messages 应已是正序（旧→新）
+    const items = messages.slice();
+
+    for (const msg of items) {
+      if (msg == null || msg.id == null) continue;
+      if (this.messageCache.has(String(msg.id))) continue;
+
+      const dateLabel = Utils.formatDateSeparator(msg.timestamp);
+      if (dateLabel && dateLabel !== prevDate) {
+        frag.appendChild(MessageRenderer.createDateSeparator(msg.timestamp));
+        prevDate = dateLabel;
+      }
+
+      const el = MessageRenderer.createMessageElement(msg, deviceId);
+      frag.appendChild(el);
+      this.messageCache.set(String(msg.id), msg);
+
+      if (msg._needsImageLoad) pendingImages.push(msg._needsImageLoad);
+    }
+
+    if (!prepend) this.lastDateLabel = prevDate;
+
+    if (prepend) {
+      const prevHeight = list.scrollHeight;
+      const prevTop = list.scrollTop;
+      // 插到 top-loading 之后
+      const loading = list.querySelector('.top-loading');
+      if (loading && loading.nextSibling) {
+        list.insertBefore(frag, loading.nextSibling);
+      } else if (loading) {
+        list.appendChild(frag);
+      } else {
+        list.insertBefore(frag, list.firstChild);
+      }
+      list.scrollTop = list.scrollHeight - prevHeight + prevTop;
+    } else {
+      const stick = this.isNearBottom();
+      list.appendChild(frag);
+      if (stick) this.scrollToBottom(true);
+    }
+
+    pendingImages.forEach(({ r2Key, safeId }) => {
+      ImageLoader.load(r2Key, safeId);
+    });
+  },
+
+  appendMessage(message, currentDeviceId) {
+    this.renderMessages([message], { prepend: false, currentDeviceId });
+  },
+
+  /** 乐观发送气泡 */
+  appendOptimisticMessage({ clientId, content, deviceId, status = 'sending' }) {
+    const msg = {
+      id: clientId,
+      type: 'text',
+      content,
+      device_id: deviceId || Utils.getDeviceId(),
+      timestamp: new Date().toISOString(),
+      status,
+      _optimistic: true
+    };
+    const el = MessageRenderer.createMessageElement(msg, Utils.getDeviceId());
+    el.classList.add('pending');
+    el.dataset.clientId = clientId;
+    // 状态图标
+    const meta = el.querySelector('.message-meta');
+    if (meta) {
+      const icon = document.createElement('span');
+      icon.className = `message-status-icon ${status}`;
+      icon.title = status === 'failed' ? '发送失败，点击重试' : '发送中';
+      meta.prepend(icon);
+    }
+    this.elements.messageList?.appendChild(el);
+    this.scrollToBottom(true);
+    return el;
+  },
+
+  updateMessagesIncremental(messages, currentDeviceId) {
+    const list = this.elements.messageList;
+    if (!list) return;
+    if (this.messageCache.size === 0) {
+      this.renderMessages(messages, { currentDeviceId });
+      this.scrollToBottom(true);
+      return;
+    }
+    const fresh = (messages || []).filter((m) => m && !this.messageCache.has(String(m.id)));
+    if (fresh.length) {
+      this.renderMessages(fresh, { currentDeviceId });
+    }
+  },
+
+  locateMessage(messageId) {
+    const list = this.elements.messageList;
+    if (!list) return false;
+    const el = list.querySelector(`[data-message-id="${messageId}"]`);
+    if (!el) return false;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('locate-flash');
+    setTimeout(() => el.classList.remove('locate-flash'), 1200);
+    return true;
+  },
+
+  showSuccess(msg) { Utils.showToast(msg, 'success'); },
+  showError(msg) { Utils.showToast(msg, 'error'); },
+  showInfo(msg) { Utils.showToast(msg, 'info'); },
+
+  // 兼容
+  showKeyboardHint() { /* no-op: 避免挡输入 */ }
 };
+
+if (typeof window !== 'undefined') window.UI = UI;

@@ -1,46 +1,52 @@
 /**
- * 统一错误处理中间件
- * 捕获所有路由中的未处理异常，统一返回格式
+ * 统一错误处理与参数校验
  */
 
-export const errorHandler = async (error, c) => {
-  console.error(`[ErrorHandler] ${c.req.method} ${c.req.path}:`, error)
-
-  const status = error.status || 500
-  const message = error.message || '服务器内部错误'
-
-  // 开发环境可返回详细错误，生产环境只返回概括信息
-  const isProduction = typeof c.env !== 'undefined' && c.env.ENVIRONMENT === 'production'
-
-  return c.json({
-    success: false,
-    error: isProduction && status === 500 ? '服务器内部错误' : message,
-    ...(isProduction ? {} : { stack: error.stack })
-  }, status)
-}
-
-/**
- * 404 处理中间件
- */
-export const notFoundHandler = (c) => {
-  return c.json({
-    success: false,
-    error: `接口不存在: ${c.req.method} ${c.req.path}`
-  }, 404)
-}
-
-/**
- * 请求参数验证辅助
- */
-export function validateParams(params, requiredFields) {
-  const missing = requiredFields.filter(field => {
-    const value = params[field]
-    return value === undefined || value === null || value === ''
-  })
-
-  if (missing.length > 0) {
-    const error = new Error(`缺少必要参数: ${missing.join(', ')}`)
-    error.status = 400
-    throw error
+export class AppError extends Error {
+  constructor(message, status = 400, code = 'BAD_REQUEST') {
+    super(message)
+    this.status = status
+    this.code = code
+    this.name = 'AppError'
   }
+}
+
+export function validateParams(obj, required = []) {
+  for (const key of required) {
+    const val = obj[key]
+    if (val === undefined || val === null || val === '') {
+      throw new AppError(`缺少必要参数: ${key}`, 400, 'MISSING_PARAM')
+    }
+  }
+}
+
+export function ok(c, data = null, extra = {}) {
+  return c.json({ success: true, data, ...extra })
+}
+
+export function fail(c, error, status = 500) {
+  const message = typeof error === 'string' ? error : (error?.message || '服务器错误')
+  const code = error?.code || 'INTERNAL_ERROR'
+  const httpStatus = error?.status || status
+  return c.json({ success: false, error: message, code }, httpStatus)
+}
+
+export function errorHandler(err, c) {
+  console.error('[Error]', err?.stack || err)
+  if (err instanceof AppError) {
+    return fail(c, err, err.status)
+  }
+  const expose = c.env?.ENVIRONMENT !== 'production'
+  return c.json({
+    success: false,
+    error: expose ? (err?.message || '服务器错误') : '服务器错误',
+    code: 'INTERNAL_ERROR'
+  }, 500)
+}
+
+export function notFoundHandler(c) {
+  if (c.req.path.startsWith('/api/')) {
+    return c.json({ success: false, error: '接口不存在', code: 'NOT_FOUND' }, 404)
+  }
+  return c.text('Not Found', 404)
 }

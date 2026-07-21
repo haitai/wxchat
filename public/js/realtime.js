@@ -1,270 +1,203 @@
-﻿// 实时通信管理器 - 重构版：修复重复连接、优化轮询
-
+/**
+ * 实时通信 v2 — SSE + 长轮询降级
+ * 只 emit 事件，不直接刷消息（避免双刷新）
+ */
 class RealtimeManager {
-    constructor() {
-        this.eventSource = null;
-        this.isConnected = false;
-        this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 3;
-        this.reconnectDelay = 1000;
-        this.deviceId = null;
-        this.listeners = new Map();
-        this.longPollingActive = false;
-        this.longPollingTimeout = null;
-        this._destroyed = false;
+  constructor() {
+    this.eventSource = null;
+    this.isConnected = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.deviceId = null;
+    this.lastMessageId = 0;
+    this.listeners = new Map();
+    this.longPollingActive = false;
+    this._destroyed = false;
+    this._pollTimer = null;
+  }
+
+  init(deviceId, lastMessageId = 0) {
+    this.deviceId = deviceId;
+    this.lastMessageId = lastMessageId || 0;
+    this._destroyed = false;
+    this.connect();
+    this.bindNetworkEvents();
+  }
+
+  on(event, handler) {
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+    this.listeners.get(event).add(handler);
+  }
+
+  off(event, handler) {
+    this.listeners.get(event)?.delete(handler);
+  }
+
+  emit(event, data) {
+    this.listeners.get(event)?.forEach((fn) => {
+      try { fn(data); } catch (e) { console.error('[Realtime] listener error', e); }
+    });
+  }
+
+  setLastMessageId(id) {
+    const n = parseInt(id, 10) || 0;
+    if (n > this.lastMessageId) this.lastMessageId = n;
+  }
+
+  connect() {
+    if (this._destroyed) return;
+    if (typeof EventSource === 'undefined') {
+      this.fallbackToLongPolling();
+      return;
     }
 
-    // 初始化实时连接
-    init(deviceId) {
-        this.deviceId = deviceId;
-        this._destroyed = false;
+    this.disconnect(false);
+    UI.setConnectionStatus('connecting');
+
+    try {
+      const token = Auth?.getToken?.() || '';
+      const url = `${CONFIG.API.ENDPOINTS.EVENTS}?deviceId=${encodeURIComponent(this.deviceId)}&token=${encodeURIComponent(token)}&lastMessageId=${this.lastMessageId}`;
+      this.eventSource = new EventSource(url);
+
+      this.eventSource.addEventListener('connection', () => {
+        if (this._destroyed) return;
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.longPollingActive = false;
+        UI.setConnectionStatus('connected');
+        this.emit('connected');
+      });
+
+      this.eventSource.addEventListener('message', (event) => {
+        if (this._destroyed) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data.lastMessageId) this.setLastMessageId(data.lastMessageId);
+          if (data.newMessages > 0 || (data.messages && data.messages.length)) {
+            this.emit('newMessages', data);
+          }
+        } catch { /* ignore */ }
+      });
+
+      this.eventSource.addEventListener('heartbeat', () => {
+        this.emit('heartbeat');
+      });
+
+      this.eventSource.addEventListener('timeout', (event) => {
+        if (this._destroyed) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data.lastMessageId) this.setLastMessageId(data.lastMessageId);
+        } catch { /* ignore */ }
+        this.disconnect(false);
         this.connect();
-    }
+      });
 
-    // 建立SSE连接
-    connect() {
-        // 防止重复连接：如果已有活跃连接，先断开
-        if (this.eventSource) {
-            const readyState = this.eventSource.readyState;
-            if (readyState === EventSource.OPEN || readyState === EventSource.CONNECTING) {
-                this.disconnect();
-            }
-        }
-
-        // 如果已销毁，不再连接
+      this.eventSource.onerror = () => {
         if (this._destroyed) return;
-
-        try {
-            const token = Auth && Auth.getToken() ? Auth.getToken() : '';
-            const url = `/api/events?deviceId=${encodeURIComponent(this.deviceId)}&token=${encodeURIComponent(token)}`;
-            this.eventSource = new EventSource(url);
-
-            this.eventSource.addEventListener('connection', (event) => {
-                if (this._destroyed) return;
-                this.isConnected = true;
-                this.reconnectAttempts = 0;
-                this.emit('connected');
-                UI.setConnectionStatus('connected');
-            });
-
-            this.eventSource.addEventListener('message', (event) => {
-                if (this._destroyed) return;
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.newMessages > 0) {
-                        this.emit('newMessages', data);
-                        MessageHandler.loadMessages(true);
-                    }
-                } catch (error) {
-                    // 静默处理解析错误
-                }
-            });
-
-            this.eventSource.addEventListener('heartbeat', () => {
-                this.emit('heartbeat');
-            });
-
-            // 超时重连通知
-            this.eventSource.addEventListener('timeout', () => {
-                if (this._destroyed) return;
-                this.disconnect();
-                this.connect();
-            });
-
-            this.eventSource.onerror = () => {
-                if (this._destroyed) return;
-                this.isConnected = false;
-                this.emit('disconnected');
-                UI.setConnectionStatus('disconnected');
-                this.handleReconnect();
-            };
-
-        } catch (error) {
-            if (!this._destroyed) {
-                this.handleReconnect();
-            }
-        }
-    }
-
-    // 断开连接
-    disconnect() {
-        if (this.eventSource) {
-            this.eventSource.close();
-            this.eventSource = null;
-        }
-        this.stopLongPolling();
         this.isConnected = false;
+        UI.setConnectionStatus('disconnected');
         this.emit('disconnected');
+        this.handleReconnect();
+      };
+    } catch (e) {
+      console.error('[Realtime] connect failed', e);
+      this.fallbackToLongPolling();
     }
+  }
 
-    // 处理重连逻辑
-    handleReconnect() {
-        if (this._destroyed) return;
+  handleReconnect() {
+    if (this._destroyed) return;
+    this.disconnect(false);
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.fallbackToLongPolling();
+      return;
+    }
+    this.reconnectAttempts += 1;
+    const delay = Math.min(1000 * (2 ** (this.reconnectAttempts - 1)), 10000);
+    UI.setConnectionStatus('reconnecting');
+    setTimeout(() => this.connect(), delay);
+  }
 
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            this.fallbackToLongPolling();
-            return;
+  fallbackToLongPolling() {
+    if (this._destroyed || this.longPollingActive) return;
+    this.longPollingActive = true;
+    this.isConnected = false;
+    UI.setConnectionStatus('connecting');
+    this.emit('disconnected');
+    this.pollLoop();
+  }
+
+  async pollLoop() {
+    if (this._destroyed || !this.longPollingActive) return;
+    try {
+      const token = Auth?.getToken?.() || '';
+      const params = new URLSearchParams({
+        deviceId: this.deviceId,
+        lastMessageId: String(this.lastMessageId),
+        timeout: '25',
+        token
+      });
+      const res = await fetch(`${CONFIG.API.ENDPOINTS.POLL}?${params}`, {
+        headers: Auth.addAuthHeader({})
+      });
+      if (res.status === 401) {
+        Auth.handleUnauthorized();
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        UI.setConnectionStatus('connected');
+        if (data.hasNewMessages) {
+          if (data.lastMessageId) this.setLastMessageId(data.lastMessageId);
+          this.emit('newMessages', data);
         }
-
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-
-        UI.setConnectionStatus('reconnecting');
-
-        setTimeout(() => {
-            if (!this.isConnected && !this._destroyed) {
-                this.connect();
-            }
-        }, delay);
+      }
+    } catch (e) {
+      UI.setConnectionStatus('disconnected');
     }
+    if (this._destroyed || !this.longPollingActive) return;
+    this._pollTimer = setTimeout(() => this.pollLoop(), 1000);
+  }
 
-    // 降级到长轮询
-    fallbackToLongPolling() {
-        this.disconnect();
-        this.startLongPolling();
-    }
-
-    // 开始长轮询
-    startLongPolling() {
-        if (this.longPollingActive || this._destroyed) return;
-        this.longPollingActive = true;
-        this.longPoll();
-    }
-
-    // 停止长轮询
-    stopLongPolling() {
-        this.longPollingActive = false;
-        if (this.longPollingTimeout) {
-            clearTimeout(this.longPollingTimeout);
-            this.longPollingTimeout = null;
-        }
-    }
-
-    // 长轮询实现 - 重构版
-    async longPoll() {
-        if (!this.longPollingActive || this._destroyed) return;
-
-        try {
-            const lastMessageId = this.getLastMessageId();
-            const url = `/api/poll?deviceId=${encodeURIComponent(this.deviceId)}&lastMessageId=${lastMessageId}&timeout=25`;
-
-            const headers = Auth ? Auth.addAuthHeader({}) : {};
-            const response = await fetch(url, { headers });
-            const data = await response.json();
-
-            if (!this.longPollingActive || this._destroyed) return;
-
-            if (data.success && data.hasNewMessages) {
-                this.emit('newMessages', { newMessages: data.newMessageCount });
-                MessageHandler.loadMessages(true);
-            }
-
-            // 只在首次建立连接时设置状态
-            if (!this.isConnected) {
-                this.isConnected = true;
-                this.emit('connected');
-                UI.setConnectionStatus('connected');
-            }
-
-        } catch (error) {
-            this.isConnected = false;
-            this.emit('disconnected');
-            UI.setConnectionStatus('disconnected');
-        }
-
-        // 继续下一次轮询
-        if (this.longPollingActive && !this._destroyed) {
-            this.longPollingTimeout = setTimeout(() => {
-                this.longPoll();
-            }, 1000);
-        }
-    }
-
-    // 获取最后一条消息ID
-    getLastMessageId() {
-        const messages = MessageHandler.lastMessages || [];
-        if (messages.length > 0) {
-            return messages[messages.length - 1].id || '0';
-        }
-        return '0';
-    }
-
-    // 检查连接状态
-    isConnectionAlive() {
-        if (this._destroyed) return false;
-        if (this.eventSource && this.eventSource.readyState === EventSource.OPEN) return true;
-        if (this.longPollingActive && this.isConnected) return true;
-        return false;
-    }
-
-    // 事件监听器
-    on(event, callback) {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, []);
-        }
-        this.listeners.get(event).push(callback);
-    }
-
-    off(event, callback) {
-        if (this.listeners.has(event)) {
-            const callbacks = this.listeners.get(event);
-            const index = callbacks.indexOf(callback);
-            if (index > -1) callbacks.splice(index, 1);
-        }
-    }
-
-    emit(event, data = null) {
-        if (this.listeners.has(event)) {
-            this.listeners.get(event).forEach(callback => {
-                try { callback(data); } catch (error) {
-                    console.error(`[Realtime] 事件回调执行失败 [${event}]:`, error);
-                }
-            });
-        }
-    }
-
-    getStatus() {
-        if (this._destroyed) return 'destroyed';
-        if (!this.eventSource) return 'disconnected';
-        switch (this.eventSource.readyState) {
-            case EventSource.CONNECTING: return 'connecting';
-            case EventSource.OPEN: return 'connected';
-            case EventSource.CLOSED: return 'disconnected';
-            default: return 'unknown';
-        }
-    }
-
-    destroy() {
-        this._destroyed = true;
-        this.disconnect();
-        this.stopLongPolling();
-        this.listeners.clear();
-        this.deviceId = null;
+  bindNetworkEvents() {
+    window.addEventListener('online', () => {
+      if (!this.isConnectionAlive()) {
         this.reconnectAttempts = 0;
+        this.longPollingActive = false;
+        this.connect();
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !this.isConnectionAlive()) {
+        this.reconnectAttempts = 0;
+        this.longPollingActive = false;
+        this.connect();
+      }
+    });
+  }
+
+  isConnectionAlive() {
+    if (this.eventSource &&
+      (this.eventSource.readyState === EventSource.OPEN || this.eventSource.readyState === EventSource.CONNECTING)) {
+      return true;
     }
+    return this.longPollingActive;
+  }
+
+  disconnect(destroy = true) {
+    if (this.eventSource) {
+      try { this.eventSource.close(); } catch { /* ignore */ }
+      this.eventSource = null;
+    }
+    clearTimeout(this._pollTimer);
+    this.isConnected = false;
+    if (destroy) {
+      this.longPollingActive = false;
+      this._destroyed = true;
+    }
+  }
 }
 
-// 创建全局实例
 const Realtime = new RealtimeManager();
-
-// 网络状态监听
-window.addEventListener('online', () => {
-    if (!Realtime.isConnectionAlive()) {
-        Realtime.connect();
-    }
-});
-
-window.addEventListener('offline', () => {
-    UI.setConnectionStatus('offline');
-});
-
-// 页面可见性变化监听
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        if (!Realtime.isConnectionAlive()) {
-            Realtime.connect();
-        }
-    }
-});
-
-window.Realtime = Realtime;
+if (typeof window !== 'undefined') window.Realtime = Realtime;

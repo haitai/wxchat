@@ -1,57 +1,74 @@
+/**
+ * wxchat Worker 入口 v2
+ * Hono + D1 + R2 + Assets
+ */
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
 import { authRoutes, authMiddleware } from './auth.js'
 import messagesRoutes from './routes/messages.js'
 import filesRoutes from './routes/files.js'
 import searchRoutes from './routes/search.js'
 import syncRoutes from './routes/sync.js'
 import realtimeRoutes from './routes/realtime.js'
+import aiRoutes from './routes/ai.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 
 const app = new Hono()
 
-// CORS配置
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Disposition']
 }))
 
-// 挂载鉴权API路由（无需认证）
+// 健康检查（无需鉴权）
+app.get('/api/health', (c) => c.json({
+  success: true,
+  data: {
+    status: 'ok',
+    version: '2.0.0',
+    time: new Date().toISOString()
+  }
+}))
+
+// 鉴权路由
 app.route('/api/auth', authRoutes)
 
-// 应用鉴权中间件到所有路由
+// API 鉴权
 app.use('/api/*', authMiddleware)
 
-// 挂载API路由（需要认证）
+// 业务路由
 app.route('/api/messages', messagesRoutes)
 app.route('/api/files', filesRoutes)
 app.route('/api/search', searchRoutes)
+app.route('/api/ai', aiRoutes)
 app.route('/api', syncRoutes)
 app.route('/api', realtimeRoutes)
 
-// 统一错误处理
 app.onError(errorHandler)
 app.notFound(notFoundHandler)
 
-// 静态文件服务 - 使用getAssetFromKV
+// 静态资源：优先 ASSETS binding，兼容 fallback
 app.get('*', async (c) => {
-  try {
-    return await getAssetFromKV(c.env, {
-      request: c.req.raw,
-      waitUntil: c.executionCtx.waitUntil.bind(c.executionCtx),
-    })
-  } catch (e) {
+  const url = new URL(c.req.url)
+
+  // 未登录访问业务页时，前端自行跳转；这里只做资源托管
+  if (c.env.ASSETS) {
     try {
-      return await getAssetFromKV(c.env, {
-        request: new Request(new URL('/index.html', c.req.url).toString()),
-        waitUntil: c.executionCtx.waitUntil.bind(c.executionCtx),
-      })
-    } catch {
-      return c.text('Not Found', 404)
+      return await c.env.ASSETS.fetch(c.req.raw)
+    } catch (e) {
+      // SPA fallback
+      try {
+        const indexReq = new Request(new URL('/index.html', url.origin), c.req.raw)
+        return await c.env.ASSETS.fetch(indexReq)
+      } catch {
+        return c.text('Not Found', 404)
+      }
     }
   }
+
+  return c.text('ASSETS binding missing', 500)
 })
 
 export default app

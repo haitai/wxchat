@@ -1,51 +1,48 @@
-// Markdown 处理模块
-// 负责 Markdown 视图切换和渲染逻辑
-
+/**
+ * Markdown 源码/渲染切换
+ */
 const MarkdownHandler = {
-    // 切换Markdown视图
-    toggleView(messageId) {
-        const messageElement = document.getElementById(messageId);
-        if (!messageElement) {
-            console.warn('消息元素未找到:', messageId);
-            return;
-        }
+  toggleView(messageId) {
+    const el = document.getElementById(messageId);
+    if (!el) return;
 
-        const isCurrentlyRendered = messageElement.dataset.isRendered === 'true';
-        const originalContent = messageElement.dataset.original;
-        const renderedContent = messageElement.dataset.rendered.replace(/&quot;/g, '"');
+    const isRendered = el.dataset.isRendered === 'true';
+    const original = el.dataset.original || '';
+    const toggle = el.querySelector('.markdown-toggle');
 
-        // 清除现有内容
-        messageElement.innerHTML = '';
-
-        if (isCurrentlyRendered) {
-            // 切换到源码视图
-            const textNode = document.createTextNode(originalContent);
-            messageElement.appendChild(textNode);
-            messageElement.className = 'text-message';
-            messageElement.dataset.isRendered = 'false';
-        } else {
-            // 切换到渲染视图
-            messageElement.innerHTML = renderedContent;
-            messageElement.className = 'text-message markdown-rendered';
-            messageElement.dataset.isRendered = 'true';
-        }
-
-        // 重新添加切换按钮
-        const toggleButton = document.createElement('button');
-        toggleButton.className = 'markdown-toggle';
-        toggleButton.onclick = () => this.toggleView(messageId);
-        toggleButton.title = '切换源码/渲染视图';
-        toggleButton.textContent = '📝';
-        messageElement.appendChild(toggleButton);
-    },
-
-    // 检查是否包含 Markdown 语法
-    hasMarkdownSyntax(text) {
-        return Utils.markdown.hasMarkdownSyntax(text);
-    },
-
-    // 渲染 Markdown 为 HTML
-    renderToHtml(text) {
-        return Utils.markdown.renderToHtml(text);
+    if (isRendered) {
+      el.classList.remove('markdown-rendered');
+      el.textContent = original;
+      if (toggle) el.appendChild(toggle);
+      else {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'markdown-toggle';
+        btn.title = '切换源码/渲染';
+        btn.textContent = '📝';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleView(messageId);
+        });
+        el.appendChild(btn);
+      }
+      el.dataset.isRendered = 'false';
+    } else {
+      el.classList.add('markdown-rendered');
+      el.innerHTML = Utils.markdown.renderToHtml(original);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'markdown-toggle';
+      btn.title = '切换源码/渲染';
+      btn.textContent = '📝';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleView(messageId);
+      });
+      el.appendChild(btn);
+      el.dataset.isRendered = 'true';
     }
+  }
 };
+
+if (typeof window !== 'undefined') window.MarkdownHandler = MarkdownHandler;

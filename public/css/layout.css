@@ -1,283 +1,265 @@
-﻿/* ============================================
-   MD3 App Shell & Layout
+/* ============================================
+   App shell — 微信文件传输助手布局
    ============================================ */
+
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: calc(var(--vh, 1vh) * 100);
-  min-height: -webkit-fill-available;
+  width: 100%;
   max-width: var(--app-max-width);
+  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
   margin: 0 auto;
-  background: var(--md-sys-color-surface);
+  background: var(--bg-chat);
   overflow: hidden;
-  padding-top: var(--safe-top);
-  padding-left: var(--safe-left);
-  padding-right: var(--safe-right);
-  position: relative;
+  /* 桌面端像手机壳 */
+  box-shadow: 0 0 0 1px var(--border-light);
 }
 
+@media (min-width: 561px) {
+  body {
+    background: #d9d9d9;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #000; }
+  }
+  .app {
+    border-radius: 0;
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+/* —— 顶栏 —— */
+.app-nav {
+  position: relative;
+  z-index: var(--z-nav);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--nav-height) + var(--safe-top));
+  padding: var(--safe-top) var(--space-3) 0;
+  background: var(--bg-nav);
+  border-bottom: 0.5px solid var(--border-color);
+}
+
+.app-nav-title {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+
+.app-nav-left,
+.app-nav-right {
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  height: var(--nav-height);
+}
+.app-nav-left { left: var(--space-1); }
+.app-nav-right { right: var(--space-1); }
+
+.nav-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  margin-right: var(--space-2);
+  transition: background var(--duration-base);
+}
+.nav-status-dot.online { background: var(--wx-green); }
+.nav-status-dot.connecting { background: var(--wx-orange); animation: pulse 1s infinite; }
+.nav-status-dot.offline { background: var(--wx-red); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* —— 主体 —— */
 .app-main {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
 }
 
-/* ---- Message List (MD3 Surface) ---- */
+/* —— 消息列表 —— */
 .message-list {
   flex: 1;
-  overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--md-sys-color-surface);
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  scroll-behavior: auto;
 }
 
-.message-list::-webkit-scrollbar { width: 4px; }
-.message-list::-webkit-scrollbar-track { background: transparent; margin: 4px 0; }
-.message-list::-webkit-scrollbar-thumb {
-  background: var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-full);
-  min-height: 30px;
+.message-list:empty::before {
+  content: '💬';
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 42%;
+  font-size: 48px;
+  opacity: 0.35;
+  pointer-events: none;
 }
-.message-list::-webkit-scrollbar-thumb:hover {
-  background: var(--md-sys-color-outline);
+.message-list:empty::after {
+  content: '暂无消息\A发送文字、图片或文件，跨设备实时同步';
+  white-space: pre-line;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: 40%;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-md);
+  text-align: center;
+  line-height: var(--line-height-loose);
+  pointer-events: none;
 }
 
+/* 顶部加载更多 */
+.top-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* 日期分隔 */
+.date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--space-4) 0 var(--space-3);
+}
+.date-separator span {
+  padding: 3px 10px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-xs);
+}
 @media (prefers-color-scheme: dark) {
-  .message-list::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
+  .date-separator span {
+    background: rgba(255, 255, 255, 0.08);
   }
 }
 
-/* ---- Input Container (MD3 Surface Container) ---- */
-.input-container {
-  border-top: 1px solid var(--md-sys-color-outline-variant);
-  padding: 8px 12px;
-  background: var(--md-sys-color-surface-container-low);
-  position: sticky;
-  bottom: 0;
+/* —— 连接状态条 —— */
+.connection-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-connection);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-inverse);
+  background: var(--wx-orange);
+  transform: translateY(-100%);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+.connection-bar.show {
+  display: flex;
+  transform: translateY(0);
+}
+.connection-bar.offline { background: var(--wx-red); }
+.connection-bar.connecting { background: var(--wx-orange); }
+
+/* —— Toast —— */
+.toast-host {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--nav-height) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+  width: min(90%, 360px);
+}
+
+.toast {
+  padding: 10px 16px;
+  max-width: 100%;
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-tight);
+  color: var(--text-inverse);
+  background: var(--bg-toast);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  animation: toast-in var(--duration-base) var(--ease-out);
+  word-break: break-word;
+  text-align: center;
+}
+.toast.success { background: rgba(7, 193, 96, 0.92); }
+.toast.error { background: rgba(250, 81, 81, 0.92); }
+.toast.leaving {
+  animation: toast-out var(--duration-fast) var(--ease-out) forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+/* PWA banners */
+.pwa-banner {
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(var(--input-min-height) + var(--safe-bottom) + 12px);
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  padding-bottom: calc(8px + var(--safe-bottom));
-  transform: translateZ(0);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--bg-cell);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  font-size: var(--font-size-md);
 }
-
-/* ---- Loading States ---- */
-.loading {
-  text-align: center;
-  color: var(--md-sys-color-on-surface-variant);
-  padding: 48px 32px;
-  font-size: var(--md-sys-typescale-body-medium-size);
+.pwa-banner-actions {
+  margin-left: auto;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  gap: var(--space-2);
 }
-
-.loading-spinner {
-  font-size: 24px;
-  animation: spin 1s linear infinite;
-  color: var(--md-sys-color-primary);
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--md-sys-color-on-surface-variant);
-  padding: 64px 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  animation: fadeIn 300ms var(--md-sys-motion-easing-emphasized-decelerate);
-}
-
-.empty-icon {
-  font-size: 56px;
-  opacity: 0.6;
-  margin-bottom: 4px;
-}
-
-.empty-state p {
-  font-size: var(--md-sys-typescale-body-medium-size);
-  color: var(--md-sys-color-on-surface-variant);
-  margin: 0;
-  line-height: var(--md-sys-typescale-body-medium-line);
-}
-
-.empty-state .empty-hint {
-  font-size: var(--md-sys-typescale-body-small-size);
-  color: var(--md-sys-color-outline);
-  margin-top: 4px;
-}
-
-/* ---- Connection Status (MD3 Badge) ---- */
-.connection-status {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  z-index: var(--z-toast);
-  padding: 4px 12px;
-  border-radius: var(--md-sys-shape-corner-full);
-  font-size: var(--md-sys-typescale-label-small-size);
-  font-weight: var(--md-sys-typescale-label-small-weight);
-  opacity: 0;
-  transform: translateY(-12px);
-  transition: opacity var(--md-sys-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate),
-              transform var(--md-sys-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate);
-  pointer-events: none;
-  letter-spacing: var(--md-sys-typescale-label-small-tracking);
-}
-
-.connection-status.show { opacity: 1; transform: translateY(0); }
-
-.connection-status.online {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-}
-.connection-status.offline {
-  background: var(--md-sys-color-error-container);
-  color: var(--md-sys-color-on-error-container);
-  animation: pulse 2s var(--md-sys-motion-easing-standard) infinite;
-}
-.connection-status.connecting,
-.connection-status.reconnecting {
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-  animation: pulse 1.5s var(--md-sys-motion-easing-standard) infinite;
-}
-
-/* ---- MD3 Snackbar (Toast) ---- */
-.toast-notification {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-120%);
-  z-index: var(--z-toast);
-  padding: 10px 20px;
-  border-radius: var(--md-snackbar-container-shape);
-  font-size: var(--md-sys-typescale-body-medium-size);
-  font-weight: var(--md-sys-typescale-label-large-weight);
-  opacity: 0;
-  transition: transform var(--md-sys-duration-medium3) var(--md-sys-motion-easing-emphasized-decelerate),
-              opacity var(--md-sys-duration-medium1) var(--md-sys-motion-easing-standard);
-  pointer-events: none;
-  max-width: calc(100% - 32px);
-  text-align: center;
-  box-shadow: var(--md-snackbar-container-elevation);
-}
-
-.toast-notification.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
-.toast-notification.toast-success {
-  background: var(--md-sys-color-primary-container);
-  color: var(--md-sys-color-on-primary-container);
-}
-.toast-notification.toast-error {
-  background: var(--md-sys-color-error-container);
-  color: var(--md-sys-color-on-error-container);
-}
-.toast-notification.toast-info {
-  background: var(--md-sys-color-tertiary-container);
-  color: var(--md-sys-color-on-tertiary-container);
-}
-
-/* ---- Animations ---- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes messageSlideIn {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(100%); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-  animation: fadeIn var(--md-sys-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate);
-}
-.message-fade-in {
-  animation: messageSlideIn var(--md-sys-duration-medium3) var(--md-sys-motion-easing-emphasized-decelerate);
-}
-
-/* ---- Top Loading Indicator (MD3 Linear Progress) ---- */
-.top-loading-indicator {
-  text-align: center;
-  padding: 8px;
-  font-size: var(--md-sys-typescale-label-small-size);
-  color: var(--md-sys-color-outline);
-  animation: fadeIn var(--md-sys-duration-medium1) var(--md-sys-motion-easing-standard);
-}
-
-/* ---- Date Separator ---- */
-.date-separator {
-  text-align: center;
-  padding: 12px 0 8px;
-  font-size: var(--md-sys-typescale-body-small-size);
-  color: var(--md-sys-color-outline);
-  position: relative;
-}
-
-.date-separator::before,
-.date-separator::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: calc(50% - 64px);
-  height: 1px;
-  background: var(--md-sys-color-outline-variant);
-}
-.date-separator::before { left: 0; }
-.date-separator::after { right: 0; }
-
-.date-separator span {
-  background: var(--md-sys-color-surface);
-  padding: 0 12px;
+.pwa-banner button {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
-
-/* ---- MD3 Divider ---- */
-.md-divider {
-  height: var(--md-divider-thickness);
-  background: var(--md-divider-color);
-  border: none;
-  margin: 8px 0;
+.pwa-banner .btn-primary {
+  background: var(--wx-green);
+  color: var(--text-inverse);
+}
+.pwa-banner .btn-ghost {
+  color: var(--text-secondary);
 }

@@ -1,106 +1,91 @@
-﻿import { Hono } from 'hono'
+import { Hono } from 'hono'
 import { FileService } from '../services/fileService.js'
 import { MessageService } from '../services/messageService.js'
-import { validateParams } from '../middleware/errorHandler.js'
+import { validateParams, ok, fail, AppError } from '../middleware/errorHandler.js'
 
 const files = new Hono()
 
-// 文件上传
 files.post('/upload', async (c) => {
+  const { DB, R2 } = c.env
+  let r2Key = null
   try {
-    const { DB, R2 } = c.env
     const formData = await c.req.formData()
     const file = formData.get('file')
     const deviceId = formData.get('deviceId')
 
-    validateParams({ file: file ? 'present' : null, deviceId }, ['file', 'deviceId'])
+    if (!file || typeof file === 'string') {
+      throw new AppError('缺少文件', 400, 'MISSING_FILE')
+    }
+    validateParams({ deviceId }, ['deviceId'])
 
-    // 生成唯一文件名
-    const r2Key = FileService.generateR2Key(file.name)
+    const maxSize = parseInt(c.env.MAX_FILE_SIZE || '0', 10)
+    if (maxSize > 0 && file.size > maxSize) {
+      throw new AppError(`文件大小超过限制（最大 ${Math.round(maxSize / 1024 / 1024)}MB）`, 400, 'FILE_TOO_LARGE')
+    }
 
-    // 上传到R2
-    await FileService.uploadToR2(r2, r2Key, file.stream(), {
+    r2Key = FileService.generateR2Key(file.name || 'file.bin')
+    await FileService.uploadToR2(R2, r2Key, file.stream(), {
       contentType: file.type,
-      fileName: file.name
+      fileName: file.name || 'file.bin'
     })
 
-    // 保存文件信息到数据库
     try {
       const fileRecord = await FileService.saveFileRecord(DB, {
-        fileName: file.name,
+        fileName: file.name || 'file.bin',
         r2Key,
         fileSize: file.size,
         mimeType: file.type,
         deviceId
       })
-
-      // 创建文件消息
       await MessageService.createFileMessage(DB, fileRecord.id, deviceId)
 
-      return c.json({
-        success: true,
-        data: {
-          fileId: fileRecord.id,
-          fileName: file.name,
-          fileSize: file.size,
-          r2Key
-        }
+      return ok(c, {
+        fileId: fileRecord.id,
+        fileName: file.name || 'file.bin',
+        fileSize: file.size,
+        r2Key
       })
     } catch (dbError) {
-      console.error('[Files] 数据库操作失败:', dbError)
-      // 回滚：删除已上传的R2文件
-      await FileService.deleteFromR2(r2, r2Key)
-      return c.json({
-        success: false,
-        error: `数据库操作失败: ${dbError.message}`
-      }, 500)
+      console.error('[Files] 数据库失败，回滚 R2:', dbError)
+      await FileService.deleteFromR2(R2, r2Key)
+      throw new AppError(`数据库操作失败: ${dbError.message}`, 500, 'DB_ERROR')
     }
   } catch (error) {
-    const status = error.status || 500
     console.error('[Files] 上传失败:', error)
-    return c.json({
-      success: false,
-      error: error.message
-    }, status)
+    return fail(c, error)
   }
 })
 
-// 文件下载
-files.get('/download/:r2Key', async (c) => {
+files.get('/download/:r2Key{.+}', async (c) => {
   try {
     const { DB, R2 } = c.env
+    // 兼容 files/xxx 带路径的 key
     const r2Key = c.req.param('r2Key')
 
-    // 获取文件信息
     const fileInfo = await FileService.getFileByR2Key(DB, r2Key)
     if (!fileInfo) {
-      return c.json({ success: false, error: '文件不存在' }, 404)
+      return fail(c, new AppError('文件不存在', 404, 'FILE_NOT_FOUND'))
     }
 
-    // 从R2获取文件
-    const object = await FileService.getFromR2(r2, r2Key)
+    const object = await FileService.getFromR2(R2, r2Key)
     if (!object) {
-      return c.json({ success: false, error: '文件不存在' }, 404)
+      return fail(c, new AppError('文件不存在', 404, 'FILE_NOT_FOUND'))
     }
 
-    // 异步更新下载次数（不阻塞响应）
-    c.executionCtx.waitUntil(
-      FileService.incrementDownloadCount(DB, r2Key)
-    )
+    c.executionCtx.waitUntil(FileService.incrementDownloadCount(DB, r2Key))
 
+    const safeName = String(fileInfo.original_name || 'file').replace(/["\r\n]/g, '_')
     return new Response(object.body, {
       headers: {
-        'Content-Type': fileInfo.mime_type,
-        'Content-Disposition': `attachment; filename="${fileInfo.original_name}"`,
-        'Content-Length': fileInfo.file_size.toString()
+        'Content-Type': fileInfo.mime_type || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(safeName)}`,
+        'Content-Length': String(fileInfo.file_size || ''),
+        'Cache-Control': 'private, max-age=3600'
       }
     })
   } catch (error) {
     console.error('[Files] 下载失败:', error)
-    return c.json({
-      success: false,
-      error: error.message
-    }, 500)
+    return fail(c, error)
   }
 })
 

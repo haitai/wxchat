@@ -1,18 +1,18 @@
-﻿import { Hono } from 'hono'
+import { Hono } from 'hono'
 import { MessageService } from '../services/messageService.js'
-import { validateParams } from '../middleware/errorHandler.js'
+import { validateParams, ok, fail } from '../middleware/errorHandler.js'
 
 const messages = new Hono()
 
-// 获取消息列表（支持分页）
 messages.get('/', async (c) => {
   try {
     const { DB } = c.env
     const limit = c.req.query('limit') || '50'
     const offset = c.req.query('offset') || '0'
+    const beforeId = c.req.query('beforeId') || null
+    const afterId = c.req.query('afterId') || null
 
-    const result = await MessageService.getMessages(DB, { limit, offset })
-
+    const result = await MessageService.getMessages(DB, { limit, offset, beforeId, afterId })
     return c.json({
       success: true,
       data: result.data,
@@ -21,34 +21,35 @@ messages.get('/', async (c) => {
       offset: result.offset
     })
   } catch (error) {
-    console.error('[Messages] 获取消息列表失败:', error)
-    return c.json({
-      success: false,
-      error: error.message
-    }, 500)
+    console.error('[Messages] 获取失败:', error)
+    return fail(c, error)
   }
 })
 
-// 发送文本消息
 messages.post('/', async (c) => {
   try {
     const { DB } = c.env
-    const { content, deviceId, type = 'text' } = await c.req.json()
-
+    const body = await c.req.json()
+    const { content, deviceId, type = 'text' } = body
     validateParams({ content, deviceId }, ['content', 'deviceId'])
 
-    const result = await MessageService.createMessage(DB, { type, content, deviceId })
+    if (typeof content !== 'string' || !content.trim()) {
+      return fail(c, { message: '消息内容不能为空', status: 400, code: 'EMPTY_CONTENT' })
+    }
+    if (content.length > 20000) {
+      return fail(c, { message: '消息过长', status: 400, code: 'CONTENT_TOO_LONG' })
+    }
 
-    return c.json({
-      success: true,
-      data: { id: result.id }
+    const allowed = ['text', 'system']
+    const msgType = allowed.includes(type) ? type : 'text'
+    const result = await MessageService.createMessage(DB, {
+      type: msgType,
+      content: content.trim(),
+      deviceId
     })
+    return ok(c, { id: result.id })
   } catch (error) {
-    const status = error.status || 500
-    return c.json({
-      success: false,
-      error: error.message
-    }, status)
+    return fail(c, error)
   }
 })
 

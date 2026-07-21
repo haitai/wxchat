@@ -1,40 +1,48 @@
+/**
+ * 鉴权：密码登录 + JWT + 登录限流
+ */
 import { Hono } from 'hono'
+import { AppError, ok, fail, validateParams } from './middleware/errorHandler.js'
+import { DBService } from './services/database.js'
 
-// 鉴权工具函数
+function base64urlEncode(bytesOrStr) {
+  const str = typeof bytesOrStr === 'string'
+    ? btoa(unescape(encodeURIComponent(bytesOrStr)))
+    : btoa(String.fromCharCode(...new Uint8Array(bytesOrStr)))
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+}
+
+function base64urlDecodeToString(str) {
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/')
+  const pad = padded.length % 4 === 0 ? '' : '='.repeat(4 - (padded.length % 4))
+  return decodeURIComponent(escape(atob(padded + pad)))
+}
+
 export const AuthUtils = {
-  // 生成简单的JWT token
   async generateToken(payload, secret) {
     const header = { alg: 'HS256', typ: 'JWT' }
-    const encodedHeader = btoa(JSON.stringify(header))
-    const encodedPayload = btoa(JSON.stringify(payload))
+    const encodedHeader = base64urlEncode(JSON.stringify(header))
+    const encodedPayload = base64urlEncode(JSON.stringify(payload))
     const signature = await this.sign(`${encodedHeader}.${encodedPayload}`, secret)
     return `${encodedHeader}.${encodedPayload}.${signature}`
   },
 
-  // 验证JWT token
   async verifyToken(token, secret) {
     try {
-      const [header, payload, signature] = token.split('.')
-      const expectedSignature = await this.sign(`${header}.${payload}`, secret)
-
-      if (signature !== expectedSignature) {
-        return null
-      }
-
-      const decodedPayload = JSON.parse(atob(payload))
-
-      // 检查过期时间
-      if (decodedPayload.exp && Date.now() > decodedPayload.exp) {
-        return null
-      }
-
-      return decodedPayload
-    } catch (error) {
+      if (!token || typeof token !== 'string') return null
+      const parts = token.split('.')
+      if (parts.length !== 3) return null
+      const [header, payload, signature] = parts
+      const expected = await this.sign(`${header}.${payload}`, secret)
+      if (signature !== expected) return null
+      const decoded = JSON.parse(base64urlDecodeToString(payload))
+      if (decoded.exp && Date.now() > decoded.exp) return null
+      return decoded
+    } catch {
       return null
     }
   },
 
-  // 生成签名
   async sign(data, secret) {
     const encoder = new TextEncoder()
     const key = await crypto.subtle.importKey(
@@ -45,117 +53,159 @@ export const AuthUtils = {
       ['sign']
     )
     const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data))
-    return btoa(String.fromCharCode(...new Uint8Array(signature)))
+    return base64urlEncode(new Uint8Array(signature))
   }
 }
 
-// 鉴权中间件
+function clientIp(c) {
+  return c.req.header('cf-connecting-ip')
+    || c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
+    || 'unknown'
+}
+
+async function checkLoginLock(db, ip, maxAttempts, lockMinutes) {
+  if (!db) return { locked: false }
+  try {
+    const row = await DBService.queryFirst(db,
+      `SELECT fail_count, locked_until FROM login_attempts WHERE ip = ?`, [ip])
+    if (!row) return { locked: false, failCount: 0 }
+    if (row.locked_until) {
+      const lockedUntil = Date.parse(row.locked_until + 'Z') || Date.parse(row.locked_until)
+      if (lockedUntil && Date.now() < lockedUntil) {
+        return {
+          locked: true,
+          failCount: row.fail_count,
+          retryAfterMs: lockedUntil - Date.now()
+        }
+      }
+    }
+    return { locked: false, failCount: row.fail_count || 0 }
+  } catch {
+    // 表可能未初始化，不阻断登录
+    return { locked: false, failCount: 0 }
+  }
+}
+
+async function recordLoginFailure(db, ip, maxAttempts, lockMinutes) {
+  if (!db) return
+  try {
+    const row = await DBService.queryFirst(db,
+      `SELECT fail_count FROM login_attempts WHERE ip = ?`, [ip])
+    const next = (row?.fail_count || 0) + 1
+    const lockedUntil = next >= maxAttempts
+      ? new Date(Date.now() + lockMinutes * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19)
+      : null
+    await DBService.execute(db,
+      `INSERT INTO login_attempts (ip, fail_count, locked_until, updated_at)
+       VALUES (?, ?, ?, datetime('now'))
+       ON CONFLICT(ip) DO UPDATE SET
+         fail_count = ?,
+         locked_until = ?,
+         updated_at = datetime('now')`,
+      [ip, next, lockedUntil, next, lockedUntil]
+    )
+  } catch (e) {
+    console.warn('[Auth] 记录登录失败失败:', e.message)
+  }
+}
+
+async function clearLoginFailures(db, ip) {
+  if (!db) return
+  try {
+    await DBService.execute(db, `DELETE FROM login_attempts WHERE ip = ?`, [ip])
+  } catch { /* ignore */ }
+}
+
 export const authMiddleware = async (c, next) => {
-  // 跳过登录和静态资源
   const path = c.req.path
-  if (path.startsWith('/api/auth/') || path.startsWith('/login.html') ||
-      path.includes('.css') || path.includes('.js') || path.includes('.ico') ||
-      path.includes('favicon')) {
+  if (path.startsWith('/api/auth/')) {
     return next()
   }
 
-  // 获取token - 优先从Authorization头获取，其次从URL参数获取（用于SSE）
   let token = null
   const authHeader = c.req.header('Authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7)
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.slice(7)
   } else {
-    // 从URL参数获取token（用于SSE连接）
-    token = c.req.query('token')
+    token = c.req.query('token') || null
   }
 
   if (!token) {
-    // 对于API请求返回401，对于页面请求重定向到登录页
-    if (path.startsWith('/api/')) {
-      return c.json({ success: false, message: '未授权访问' }, 401)
-    }
-    return c.redirect('/login.html')
+    return c.json({ success: false, error: '未授权访问', code: 'UNAUTHORIZED' }, 401)
   }
 
   const payload = await AuthUtils.verifyToken(token, c.env.JWT_SECRET)
-
   if (!payload) {
-    // 对于API请求返回401，对于页面请求重定向到登录页
-    if (path.startsWith('/api/')) {
-      return c.json({ success: false, message: 'Token无效或已过期' }, 401)
-    }
-    return c.redirect('/login.html')
+    return c.json({ success: false, error: 'Token无效或已过期', code: 'TOKEN_INVALID' }, 401)
   }
 
-  // 将用户信息添加到上下文
   c.set('user', payload)
   return next()
 }
 
-// 鉴权API路由
 export const authRoutes = new Hono()
 
-// 登录接口
 authRoutes.post('/login', async (c) => {
   try {
-    const { password } = await c.req.json()
+    const body = await c.req.json().catch(() => ({}))
+    const { password } = body
+    validateParams({ password }, ['password'])
 
-    if (!password) {
-      return c.json({ success: false, message: '密码不能为空' }, 400)
+    const ip = clientIp(c)
+    const maxAttempts = parseInt(c.env.MAX_LOGIN_ATTEMPTS || '5', 10)
+    const lockMinutes = parseInt(c.env.LOGIN_LOCKOUT_MINUTES || '15', 10)
+    const lock = await checkLoginLock(c.env.DB, ip, maxAttempts, lockMinutes)
+    if (lock.locked) {
+      const mins = Math.ceil((lock.retryAfterMs || 0) / 60000)
+      return fail(c, new AppError(`登录失败次数过多，请 ${mins} 分钟后再试`, 429, 'LOGIN_LOCKED'))
     }
 
-    // 直接验证明文密码（简化配置）
-    const expectedPassword = c.env.ACCESS_PASSWORD
-
-    if (password !== expectedPassword) {
-      return c.json({ success: false, message: '密码错误' }, 401)
+    const expected = c.env.ACCESS_PASSWORD
+    if (!expected) {
+      return fail(c, new AppError('服务端未配置访问密码', 500, 'CONFIG_ERROR'))
     }
 
-    // 生成token
-    const expireHours = parseInt(c.env.SESSION_EXPIRE_HOURS || '24')
+    if (password !== expected) {
+      await recordLoginFailure(c.env.DB, ip, maxAttempts, lockMinutes)
+      return fail(c, new AppError('密码错误', 401, 'BAD_PASSWORD'))
+    }
+
+    await clearLoginFailures(c.env.DB, ip)
+
+    const expireHours = parseInt(c.env.SESSION_EXPIRE_HOURS || '24', 10)
     const payload = {
       iat: Date.now(),
-      exp: Date.now() + (expireHours * 60 * 60 * 1000),
+      exp: Date.now() + expireHours * 60 * 60 * 1000,
       type: 'access'
     }
-
     const token = await AuthUtils.generateToken(payload, c.env.JWT_SECRET)
 
-    return c.json({
-      success: true,
+    return ok(c, {
       token,
       expiresIn: expireHours * 60 * 60
     })
   } catch (error) {
-    console.error('登录错误:', error)
-    return c.json({ success: false, message: '服务器错误' }, 500)
+    return fail(c, error)
   }
 })
 
-// 验证token接口
 authRoutes.get('/verify', async (c) => {
   try {
     const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return c.json({ valid: false, message: '缺少认证信息' }, 401)
     }
-
-    const token = authHeader.substring(7)
+    const token = authHeader.slice(7)
     const payload = await AuthUtils.verifyToken(token, c.env.JWT_SECRET)
-
     if (!payload) {
       return c.json({ valid: false, message: 'Token无效或已过期' }, 401)
     }
-
     return c.json({ valid: true, payload })
   } catch (error) {
-    console.error('验证token错误:', error)
     return c.json({ valid: false, message: '服务器错误' }, 500)
   }
 })
 
-// 登出接口
 authRoutes.post('/logout', async (c) => {
-  // 简单的登出响应，实际的token清理在前端处理
-  return c.json({ success: true, message: '已登出' })
+  return ok(c, { message: '已登出' })
 })

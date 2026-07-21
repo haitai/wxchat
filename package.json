@@ -1,28 +1,35 @@
 {
   "name": "wxchat",
-  "version": "1.0.0",
-  "description": "微信文件传输助手Web应用 - 模块化设计",
+  "version": "2.0.0",
+  "description": "微信文件传输助手 - Cloudflare Workers 全栈重构版",
+  "private": true,
+  "type": "module",
   "main": "worker/index.js",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "build": "node build.js",
-    "db:init": "wrangler d1 execute wxchat --file=./database/schema.sql"
+    "db:local": "wrangler d1 execute wxchat --local --file=./database/schema.sql",
+    "db:remote": "wrangler d1 execute wxchat --remote --file=./database/schema.sql",
+    "db:init": "wrangler d1 execute wxchat --file=./database/schema.sql",
+    "tail": "wrangler tail"
   },
   "dependencies": {
-    "hono": "^3.12.0",
-    "@cloudflare/kv-asset-handler": "^0.3.0"
+    "hono": "^4.7.2"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.114.0"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "keywords": [
     "cloudflare-workers",
     "hono",
+    "wechat",
     "file-transfer",
-    "modular-design",
-    "static-files"
+    "d1",
+    "r2",
+    "pwa"
   ],
-  "author": "xiyewuqiu <xiyewuqiu@gmail.com>",
-  "license": "MIT"
+  "license": "CC-BY-NC-SA-4.0"
 }
