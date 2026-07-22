@@ -89,7 +89,7 @@ export const MessageService = {
 
   async createMessage(db, { type = 'text', content, deviceId, meta = null }) {
     const result = await DBService.execute(db,
-      `INSERT INTO messages (type, content, device_id, meta) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO messages (type, content, device_id, meta, status) VALUES (?, ?, ?, ?, 'sent')`,
       [type, content, deviceId, meta]
     )
     return { id: result.meta.last_row_id }
@@ -97,7 +97,7 @@ export const MessageService = {
 
   async createFileMessage(db, fileId, deviceId) {
     const result = await DBService.execute(db,
-      `INSERT INTO messages (type, file_id, device_id) VALUES (?, ?, ?)`,
+      `INSERT INTO messages (type, file_id, device_id, status) VALUES (?, ?, ?, 'sent')`,
       ['file', fileId, deviceId]
     )
     return { id: result.meta.last_row_id }
@@ -106,7 +106,7 @@ export const MessageService = {
   async createAIMessage(db, { content, deviceId, type = 'ai_response' }) {
     const meta = JSON.stringify({ aiType: type })
     const result = await DBService.execute(db,
-      `INSERT INTO messages (type, content, device_id, meta) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO messages (type, content, device_id, meta, status) VALUES (?, ?, ?, ?, 'sent')`,
       ['ai', content, deviceId || 'ai-system', meta]
     )
     return {

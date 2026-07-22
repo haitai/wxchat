@@ -8,6 +8,7 @@ const required = [
   'worker/index.js',
   'worker/auth.js',
   'worker/routes/ai.js',
+  'worker/services/schema.js',
   'public/index.html',
   'public/login.html',
   'public/js/app.js',
