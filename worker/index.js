@@ -12,6 +12,7 @@ import syncRoutes from './routes/sync.js'
 import realtimeRoutes from './routes/realtime.js'
 import aiRoutes from './routes/ai.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { ensureSchema } from './services/schema.js'
 
 const app = new Hono()
 
@@ -22,15 +23,37 @@ app.use('*', cors({
   exposeHeaders: ['Content-Disposition']
 }))
 
-// 健康检查（无需鉴权）
-app.get('/api/health', (c) => c.json({
-  success: true,
-  data: {
-    status: 'ok',
-    version: '2.0.0',
-    time: new Date().toISOString()
+// 任何 API 进来先幂等修库（旧 D1 缺 status/meta 直接 500 的锅）
+app.use('/api/*', async (c, next) => {
+  if (c.env.DB) {
+    await ensureSchema(c.env.DB)
   }
-}))
+  return next()
+})
+
+// 健康检查（无需鉴权）
+app.get('/api/health', async (c) => {
+  let schema = 'unknown'
+  try {
+    if (c.env.DB) {
+      await ensureSchema(c.env.DB)
+      schema = 'ready'
+    } else {
+      schema = 'no-db'
+    }
+  } catch (e) {
+    schema = `error:${e.message || e}`
+  }
+  return c.json({
+    success: true,
+    data: {
+      status: 'ok',
+      version: '2.0.1',
+      schema,
+      time: new Date().toISOString()
+    }
+  })
+})
 
 // 鉴权路由
 app.route('/api/auth', authRoutes)

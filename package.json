@@ -6,11 +6,14 @@
   "type": "module",
   "main": "worker/index.js",
   "scripts": {
+    "build": "node build.js",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:local": "wrangler d1 execute wxchat --local --file=./database/schema.sql",
     "db:remote": "wrangler d1 execute wxchat --remote --file=./database/schema.sql",
     "db:init": "wrangler d1 execute wxchat --file=./database/schema.sql",
+    "db:migrate:remote": "wrangler d1 execute wxchat --remote --file=./database/migrate-v2.sql",
+    "db:inspect:remote": "wrangler d1 execute wxchat --remote --command \"PRAGMA table_info(messages);\"",
     "tail": "wrangler tail"
   },
   "dependencies": {
