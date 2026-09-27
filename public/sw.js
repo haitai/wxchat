@@ -1,9 +1,8 @@
-/* wxchat service worker v2.0.1 */
-const CACHE_NAME = 'wxchat-static-v2.1.1';
+/* wxchat service worker v2.0.2 */
+const CACHE_NAME = 'wxchat-static-v2.1.2';
 const PRECACHE = [
   '/',
-  '/index.html',
-  '/login.html',
+  '/login',
   '/manifest.json',
   '/css/variables.css',
   '/css/base.css',

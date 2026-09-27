@@ -14,7 +14,7 @@ class WeChatApp {
 
       const isAuthenticated = await Auth.checkAuthentication();
       if (!isAuthenticated) {
-        window.location.href = '/login.html';
+        window.location.href = '/login';
         return;
       }
 

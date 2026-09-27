@@ -2,7 +2,7 @@
   "name": "文件传输助手",
   "short_name": "传输助手",
   "description": "跨设备文件与消息传输助手",
-  "start_url": "/index.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -32,13 +32,13 @@
     {
       "name": "发送文件",
       "short_name": "传文件",
-      "url": "/index.html?action=file",
+      "url": "/?action=file",
       "icons": [{ "src": "/icons/ios/96.png", "sizes": "96x96" }]
     },
     {
       "name": "查看消息",
       "short_name": "消息",
-      "url": "/index.html",
+      "url": "/",
       "icons": [{ "src": "/icons/ios/96.png", "sizes": "96x96" }]
     }
   ]

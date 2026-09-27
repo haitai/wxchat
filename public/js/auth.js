@@ -234,11 +234,11 @@ const Auth = {
   },
 
   redirectToApp() {
-    location.href = '/index.html';
+    location.href = '/';
   },
 
   redirectToLogin() {
-    location.href = '/login.html';
+    location.href = '/login';
   },
 
   showMessage(id, text) {
