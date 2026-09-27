@@ -1,5 +1,5 @@
-/* wxchat service worker v2.0.0 */
-const CACHE_NAME = 'wxchat-static-v2.1.0';
+/* wxchat service worker v2.0.1 */
+const CACHE_NAME = 'wxchat-static-v2.1.1';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -43,9 +43,32 @@ const PRECACHE = [
   '/icons/icon.svg'
 ];
 
+// Cloudflare 静态资源默认 html_handling=auto-trailing-slash：
+// /login.html -> 307 /login，/index.html -> 307 /
+// 跟随该重定向得到的响应 redirected=true，直接回给导航请求
+// （导航请求的 redirect mode 是 manual）会报：
+// "a redirected response was used for a request whose redirect mode is not 'follow'"
+// 因此入库/回包前必须去掉 redirected 标记（参考 Workbox cleanResponse）
+async function cleanResponse(res) {
+  if (!res || !res.redirected) return res;
+  const body = await res.arrayBuffer();
+  return new Response(body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers
+  });
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) =>
+      // 逐个预缓存：跟随重定向拿到内容后清洗再入库，保证缓存里没有 redirected 响应
+      Promise.all(PRECACHE.map(async (url) => {
+        const res = await fetch(url, { redirect: 'follow' });
+        if (!res.ok) throw new Error(`precache ${url} -> ${res.status}`);
+        await cache.put(url, await cleanResponse(res));
+      }))
+    ).then(() => self.skipWaiting())
   );
 });
 
@@ -77,15 +100,18 @@ self.addEventListener('fetch', (event) => {
   // 静态资源：缓存优先，回落网络
   if (req.method === 'GET') {
     event.respondWith(
-      caches.match(req).then((cached) => {
+      caches.match(req).then(async (cached) => {
+        // 兜底：万一缓存里混入 redirected 响应，先清洗再回包，避免导航网络错误
+        const served = cached && cached.redirected ? await cleanResponse(cached) : cached;
         const fetched = fetch(req).then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
+          // 不缓存跟随重定向得到的响应，防止缓存被污染
+          if (res && res.status === 200 && res.type === 'basic' && !res.redirected) {
             const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
           }
           return res;
-        }).catch(() => cached);
-        return cached || fetched;
+        }).catch(() => served);
+        return served || fetched;
       })
     );
   }
